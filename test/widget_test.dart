@@ -446,9 +446,9 @@ void main() {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
 
-    // 1. Verify point button is taken out of top bar - only username button is present
-    expect(find.text('100'), findsNothing);
+    // 1. Verify username button and point button appear on top bar
     expect(find.text(UserService.instance.username), findsOneWidget);
+    expect(find.text('100'), findsOneWidget);
 
     // 2. Open Profile dialog using username button
     await tester.tap(find.text(UserService.instance.username));
@@ -459,6 +459,19 @@ void main() {
 
     // Close profile dialog
     await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    // 3. Open dedicated Points Dialog using point button
+    await tester.tap(find.text('100'));
+    await tester.pumpAndSettle();
+
+    // Verify Points & Rewards dialog is shown
+    expect(find.text('Points & Rewards'), findsOneWidget);
+    expect(find.text('Total Score'), findsOneWidget);
+    expect(find.text('1 wins'), findsOneWidget);
+
+    // Close points dialog
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
   });
 }
