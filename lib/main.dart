@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/audio_service.dart';
 import 'services/user_service.dart';
+import 'services/language_service.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -13,9 +14,10 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
   
-  // Initialize user profile and audio systems
+  // Initialize user profile, audio systems, and language preferences
   await UserService.instance.init();
   await AudioService.instance.init();
+  await LanguageService.instance.init();
 
   runApp(const RekGameApp());
 }

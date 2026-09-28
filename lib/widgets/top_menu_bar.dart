@@ -6,6 +6,9 @@ class TopMenuBar extends StatelessWidget {
   final bool isEraserActive;
   final VoidCallback onRotateBoard;
   final bool isWifiConnected;
+  final String labelEraseAll;
+  final String labelErase;
+  final String labelRotateBoard;
 
   const TopMenuBar({
     super.key,
@@ -14,6 +17,9 @@ class TopMenuBar extends StatelessWidget {
     required this.isEraserActive,
     required this.onRotateBoard,
     this.isWifiConnected = true,
+    this.labelEraseAll = 'Erase all',
+    this.labelErase = 'Erase',
+    this.labelRotateBoard = 'Rotate Baord',
   });
 
   @override
@@ -43,19 +49,19 @@ class TopMenuBar extends StatelessWidget {
               const SizedBox(width: 14),
               // Action Buttons: "Erase all", "Erase", "Rotate Baord"
               _buildMenuButton(
-                label: 'Erase all',
+                label: labelEraseAll,
                 onTap: onEraseAll,
                 isDestructive: true,
               ),
               const SizedBox(width: 8),
               _buildMenuButton(
-                label: 'Erase',
+                label: labelErase,
                 onTap: onToggleErase,
                 isActive: isEraserActive,
               ),
               const SizedBox(width: 8),
               _buildMenuButton(
-                label: 'Rotate Baord',
+                label: labelRotateBoard,
                 onTap: onRotateBoard,
               ),
             ],

@@ -4,6 +4,7 @@ import 'package:game_rek/main.dart';
 import 'package:game_rek/logic/rek_rules.dart';
 import 'package:game_rek/models/rek_piece.dart';
 import 'package:game_rek/services/user_service.dart';
+import 'package:game_rek/services/language_service.dart';
 
 void main() {
   testWidgets('Rek app home page and navigation to game editor test', (WidgetTester tester) async {
@@ -216,5 +217,41 @@ void main() {
 
     // Verify returned to home screen
     expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
+  });
+
+  testWidgets('Language button toggle between English and Khmer test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Initially English
+    expect(find.text('Play vs AI'), findsOneWidget);
+    expect(find.text('Pass & Play (2 Players)'), findsOneWidget);
+    expect(find.text('EN'), findsOneWidget);
+
+    // 2. Tap language button on top bar to switch to Khmer
+    await tester.tap(find.text('EN'));
+    await tester.pumpAndSettle();
+
+    // 3. Verify switched to Khmer
+    expect(LanguageService.instance.isKhmer, isTrue);
+    expect(find.text('ខ្មែរ'), findsOneWidget);
+    expect(find.text('លេងជាមួយ AI'), findsOneWidget);
+    expect(find.text('លេង២នាក់ (ឧបករណ៍តែមួយ)'), findsOneWidget);
+
+    // 4. Tap language button again to switch back to English
+    await tester.tap(find.text('ខ្មែរ'));
+    await tester.pumpAndSettle();
+
+    // 5. Verify back to English
+    expect(LanguageService.instance.isEnglish, isTrue);
+    expect(find.text('EN'), findsOneWidget);
+    expect(find.text('Play vs AI'), findsOneWidget);
   });
 }

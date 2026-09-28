@@ -6,6 +6,8 @@ class BottomMenuBar extends StatelessWidget {
   final VoidCallback onPlay;
   final VoidCallback onChat;
   final bool isPlaying;
+  final String labelSave;
+  final String labelPlay;
 
   const BottomMenuBar({
     super.key,
@@ -14,6 +16,8 @@ class BottomMenuBar extends StatelessWidget {
     required this.onPlay,
     required this.onChat,
     this.isPlaying = false,
+    this.labelSave = 'Save',
+    this.labelPlay = 'Play',
   });
 
   @override
@@ -59,13 +63,13 @@ class BottomMenuBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildBottomButton(
-                    label: 'Save',
+                    label: labelSave,
                     onTap: onSave,
                     backgroundColor: const Color(0xFF37474F),
                   ),
                   const SizedBox(width: 10),
                   _buildBottomButton(
-                    label: 'Play',
+                    label: labelPlay,
                     onTap: onPlay,
                     backgroundColor: isPlaying
                         ? const Color(0xFFE65100)

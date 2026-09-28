@@ -7,6 +7,7 @@ import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
 import '../services/audio_service.dart';
 import '../services/user_service.dart';
+import '../services/language_service.dart';
 import '../widgets/piece_selector_bar.dart';
 import '../widgets/top_menu_bar.dart';
 import '../widgets/bottom_menu_bar.dart';
@@ -16,6 +17,7 @@ import '../widgets/save_load_dialog.dart';
 import '../widgets/game_status_overlay.dart';
 import '../widgets/profile_edit_dialog.dart';
 import '../widgets/settings_dialog.dart';
+import '../widgets/language_button.dart';
 
 class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
@@ -234,72 +236,92 @@ class _RekGameScreenState extends State<RekGameScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (ctx) => ListenableBuilder(
+        listenable: LanguageService.instance,
+        builder: (context, _) {
+          final lang = LanguageService.instance;
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Language Switcher option
+                  ListTile(
+                    leading: const Icon(Icons.language, color: Color(0xFF64B5F6)),
+                    title: Text(
+                      lang.languageSection,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    trailing: const LanguageToggleButton(isCompact: true),
+                    onTap: () {
+                      AudioService.instance.playClick();
+                      LanguageService.instance.toggleLanguage();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.music_note, color: Color(0xFFFFD54F)),
+                    title: Text(lang.musicSettingsTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    subtitle: Text(lang.musicSettingsSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      showDialog(
+                        context: context,
+                        builder: (_) => const SettingsDialog(),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person, color: Color(0xFF81C784)),
+                    title: Text(lang.changeProfileTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      '${lang.playerUsername}: ${UserService.instance.avatar} ${UserService.instance.username}',
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      showDialog(
+                        context: context,
+                        builder: (_) => const ProfileEditDialog(),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
+                    title: Text(lang.rulesAndHistoryTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    subtitle: Text(lang.movesPlayed(_moveHistory.length), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      showDialog(
+                        context: context,
+                        builder: (_) => RulesDialog(moveHistory: _moveHistory),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.refresh, color: Color(0xFFFF8A65)),
+                    title: Text(lang.resetBoardTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    subtitle: Text(lang.resetBoardSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _resetBoardToStandard();
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.music_note, color: Color(0xFFFFD54F)),
-                title: const Text('Music & Audio Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Soundtrack tracks, volume & effects', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => const SettingsDialog(),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.person, color: Color(0xFF81C784)),
-                title: const Text('Change Username & Avatar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text(
-                  'Current: ${UserService.instance.avatar} ${UserService.instance.username}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => const ProfileEditDialog(),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
-                title: const Text('Rules & Move History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: Text('${_moveHistory.length} moves played', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showDialog(
-                    context: context,
-                    builder: (_) => RulesDialog(moveHistory: _moveHistory),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.refresh, color: Color(0xFFFF8A65)),
-                title: const Text('Reset Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Reset back to standard Rek setup', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _resetBoardToStandard();
-                },
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -428,10 +450,11 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _showGameOverDialog(GameOverResult result) {
+    final lang = LanguageService.instance;
     final isPlayerWinner = result.winner == PlayerColor.lime;
     final winnerName = isPlayerWinner
         ? '${UserService.instance.avatar} ${UserService.instance.username.toUpperCase()}'
-        : (_vsAi ? '🤖 REK AI' : '👥 PLAYER 2');
+        : (_vsAi ? (lang.isKhmer ? '🤖 AI' : '🤖 REK AI') : (lang.isKhmer ? '👥 អ្នកលេងទី២' : '👥 PLAYER 2'));
 
     showDialog(
       context: context,
@@ -448,7 +471,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                '$winnerName WINS!',
+                lang.wins(winnerName),
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -466,7 +489,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
               Navigator.pop(context);
               setState(() => _isPlaying = false);
             },
-            child: const Text('Close', style: TextStyle(color: Colors.white70)),
+            child: Text(lang.close, style: const TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
@@ -476,7 +499,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
               _resetBoardToStandard();
               setState(() => _isPlaying = true);
             },
-            child: const Text('Play Again', style: TextStyle(color: Colors.white)),
+            child: Text(lang.playAgain, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -547,24 +570,31 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1E272C),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLandscape = constraints.maxWidth > constraints.maxHeight * 1.15;
-            if (isLandscape) {
-              return _buildLandscapeLayout(context, constraints);
-            } else {
-              return _buildPortraitLayout(context, constraints);
-            }
-          },
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: LanguageService.instance,
+      builder: (context, _) {
+        final lang = LanguageService.instance;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF1E272C),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLandscape = constraints.maxWidth > constraints.maxHeight * 1.15;
+                if (isLandscape) {
+                  return _buildLandscapeLayout(context, constraints, lang);
+                } else {
+                  return _buildPortraitLayout(context, constraints, lang);
+                }
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildPortraitLayout(BuildContext context, BoxConstraints constraints) {
+  Widget _buildPortraitLayout(BuildContext context, BoxConstraints constraints, LanguageService lang) {
     final screenHeight = constraints.maxHeight;
     final isCompactHeight = screenHeight < 680;
     final tokenSize = isCompactHeight ? 34.0 : 40.0;
@@ -578,6 +608,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
           isEraserActive: _isEraserActive,
           onRotateBoard: _onRotateBoard,
           isWifiConnected: true,
+          labelEraseAll: lang.eraseAll,
+          labelErase: lang.erase,
+          labelRotateBoard: lang.rotateBoard,
         ),
 
         // Top Piece Selectors: Teal Plain & Crown
@@ -643,12 +676,14 @@ class _RekGameScreenState extends State<RekGameScreen> {
           onPlay: _onPlay,
           onChat: _onChat,
           isPlaying: _isPlaying,
+          labelSave: lang.save,
+          labelPlay: lang.play,
         ),
       ],
     );
   }
 
-  Widget _buildLandscapeLayout(BuildContext context, BoxConstraints constraints) {
+  Widget _buildLandscapeLayout(BuildContext context, BoxConstraints constraints, LanguageService lang) {
     return Column(
       children: [
         // Unified Header for Landscape Mode
@@ -692,16 +727,16 @@ class _RekGameScreenState extends State<RekGameScreen> {
               ),
               const SizedBox(width: 8),
               // Menu Actions
-              _buildCompactBtn('Erase all', _onEraseAll, isDestructive: true),
+              _buildCompactBtn(lang.eraseAll, _onEraseAll, isDestructive: true),
               const SizedBox(width: 6),
-              _buildCompactBtn('Erase', _onToggleErase, isActive: _isEraserActive),
+              _buildCompactBtn(lang.erase, _onToggleErase, isActive: _isEraserActive),
               const SizedBox(width: 6),
-              _buildCompactBtn('Rotate Baord', _onRotateBoard),
+              _buildCompactBtn(lang.rotateBoard, _onRotateBoard),
               const SizedBox(width: 6),
-              _buildCompactBtn('Save', _onSave),
+              _buildCompactBtn(lang.save, _onSave),
               const SizedBox(width: 6),
               _buildCompactBtn(
-                'Play',
+                lang.play,
                 _onPlay,
                 highlight: true,
                 backgroundColor: _isPlaying ? const Color(0xFFE65100) : const Color(0xFF2E7D32),

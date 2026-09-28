@@ -5,10 +5,12 @@ import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
 import '../services/audio_service.dart';
 import '../services/user_service.dart';
+import '../services/language_service.dart';
 import '../widgets/piece_token_widget.dart';
 import '../widgets/profile_edit_dialog.dart';
 import '../widgets/rules_dialog.dart';
 import '../widgets/settings_dialog.dart';
+import '../widgets/language_button.dart';
 import 'rek_game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -91,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showAiDifficultyPicker() {
     AudioService.instance.playClick();
+    final lang = LanguageService.instance;
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF263238),
@@ -104,9 +107,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Select AI Difficulty',
-                style: TextStyle(
+              Text(
+                lang.selectAiDifficulty,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -116,20 +119,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               _buildDifficultyOption(
                 setModalState,
                 AiDifficulty.easy,
-                'Easy',
-                'Casual play with basic capture detection',
+                lang.easyDifficulty,
+                lang.easyDifficultyDesc,
               ),
               _buildDifficultyOption(
                 setModalState,
                 AiDifficulty.medium,
-                'Medium (Balanced)',
-                'Tactical Rek captures and King safety evaluation',
+                lang.mediumDifficulty,
+                lang.mediumDifficultyDesc,
               ),
               _buildDifficultyOption(
                 setModalState,
                 AiDifficulty.hard,
-                'Master / Hard',
-                'Deep 2-ply minimax search with alpha-beta pruning',
+                lang.hardDifficulty,
+                lang.hardDifficultyDesc,
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -144,7 +147,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Navigator.pop(ctx);
                     _navigateToGame(startInPlayMode: true, vsAi: true);
                   },
-                  child: const Text('Start Match vs AI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    lang.startMatch,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -190,32 +196,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF192227),
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              _buildTopBar(),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth > 680;
-                    return SingleChildScrollView(
-                      child: Center(
-                        child: isWide
-                            ? _buildWideLayout(constraints)
-                            : _buildCompactLayout(constraints),
-                      ),
-                    );
-                  },
-                ),
+    return ListenableBuilder(
+      listenable: LanguageService.instance,
+      builder: (context, _) {
+        final lang = LanguageService.instance;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF192227),
+          body: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  _buildTopBar(),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth > 680;
+                        return SingleChildScrollView(
+                          child: Center(
+                            child: isWide
+                                ? _buildWideLayout(constraints, lang)
+                                : _buildCompactLayout(constraints, lang),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -272,10 +285,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
           const SizedBox(width: 8),
 
-          // Settings and Music quick controls
+          // Settings, Music & Language quick controls
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Language Switcher button
+              const LanguageToggleButton(),
+              const SizedBox(width: 4),
+
               // Music toggle button
               ListenableBuilder(
                 listenable: AudioService.instance,
@@ -308,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildWideLayout(BoxConstraints constraints) {
+  Widget _buildWideLayout(BoxConstraints constraints, LanguageService lang) {
     return ConstrainedBox(
       constraints: BoxConstraints(
         minHeight: constraints.maxHeight,
@@ -327,9 +344,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: [
                   _buildHeroEmblem(),
                   const SizedBox(height: 18),
-                  const Text(
-                    'ល្បែងរែក',
-                    style: TextStyle(
+                  Text(
+                    lang.khmerTitle,
+                    style: const TextStyle(
                       color: Color(0xFFFFD54F),
                       fontSize: 34,
                       fontWeight: FontWeight.bold,
@@ -337,9 +354,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'CAMBODIAN REK CHESS',
-                    style: TextStyle(
+                  Text(
+                    lang.englishTitle,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -347,16 +364,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Traditional Khmer Board Game & Board Editor',
+                  Text(
+                    lang.appSubtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Traditional Cambodian Cultural Game\n8×8 Rook Moves & Shoulder-Pole Captures',
+                  Text(
+                    lang.appDescription,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white30, fontSize: 11),
+                    style: const TextStyle(color: Colors.white30, fontSize: 11),
                   ),
                 ],
               ),
@@ -372,8 +389,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   _buildMenuCard(
                     icon: Icons.smart_toy_outlined,
                     iconColor: const Color(0xFF81C784),
-                    title: 'Play vs AI',
-                    subtitle: 'Single player vs Computer (${_selectedDifficulty.name.toUpperCase()})',
+                    title: lang.playVsAiTitle,
+                    subtitle: lang.playVsAiSubtitle(_selectedDifficulty.name),
                     onTap: _showAiDifficultyPicker,
                     primary: true,
                   ),
@@ -381,24 +398,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   _buildMenuCard(
                     icon: Icons.people_outline,
                     iconColor: const Color(0xFF4DB6AC),
-                    title: 'Pass & Play (2 Players)',
-                    subtitle: 'Play locally against a friend on one device',
+                    title: lang.passAndPlayTitle,
+                    subtitle: lang.passAndPlaySubtitle,
                     onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
                   ),
                   const SizedBox(height: 10),
                   _buildMenuCard(
                     icon: Icons.dashboard_customize_outlined,
                     iconColor: const Color(0xFFFFD54F),
-                    title: 'Board Setup & Editor',
-                    subtitle: 'Custom setup with Erase, Rotate Baord & Selectors',
+                    title: lang.boardSetupTitle,
+                    subtitle: lang.boardSetupSubtitle,
                     onTap: () => _navigateToGame(startInPlayMode: false, vsAi: true),
                   ),
                   const SizedBox(height: 10),
                   _buildMenuCard(
                     icon: Icons.menu_book_outlined,
                     iconColor: const Color(0xFFFFD54F),
-                    title: 'Rules & Guide',
-                    subtitle: 'Learn Rek shoulder-pole captures & tactics',
+                    title: lang.rulesAndGuideTitle,
+                    subtitle: lang.rulesAndGuideSubtitle,
                     onTap: _showRules,
                   ),
                 ],
@@ -410,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildCompactLayout(BoxConstraints constraints) {
+  Widget _buildCompactLayout(BoxConstraints constraints, LanguageService lang) {
     return ConstrainedBox(
       constraints: BoxConstraints(
         minHeight: constraints.maxHeight,
@@ -425,165 +442,170 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             _buildHeroEmblem(),
             const SizedBox(height: 16),
 
-                          // Khmer Title
-                          const Text(
-                            'ល្បែងរែក',
-                            style: TextStyle(
-                              color: Color(0xFFFFD54F),
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
-                              shadows: [
-                                Shadow(
-                                  color: Color(0x66FFD54F),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                          ),
+            // Khmer Title
+            Text(
+              lang.khmerTitle,
+              style: const TextStyle(
+                color: Color(0xFFFFD54F),
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
+                shadows: [
+                  Shadow(
+                    color: Color(0x66FFD54F),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
 
-                          const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
-                          // English Title
-                          const Text(
-                            'CAMBODIAN REK CHESS',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 2.5,
-                            ),
-                          ),
+            // English Title
+            Text(
+              lang.englishTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.5,
+              ),
+            ),
 
-                          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-                          // Tagline
-                          const Text(
-                            'Traditional Khmer Board Game & Board Editor',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 13,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
+            // Tagline
+            Text(
+              lang.appSubtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white60,
+                fontSize: 13,
+                letterSpacing: 0.3,
+              ),
+            ),
 
-                          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-                          // Action Buttons List
-                          _buildMenuCard(
-                            icon: Icons.smart_toy_outlined,
-                            iconColor: const Color(0xFF81C784),
-                            title: 'Play vs AI',
-                            subtitle: 'Single player vs Computer (${_selectedDifficulty.name.toUpperCase()})',
-                            onTap: _showAiDifficultyPicker,
-                            primary: true,
-                          ),
+            // Action Buttons List
+            _buildMenuCard(
+              icon: Icons.smart_toy_outlined,
+              iconColor: const Color(0xFF81C784),
+              title: lang.playVsAiTitle,
+              subtitle: lang.playVsAiSubtitle(_selectedDifficulty.name),
+              onTap: _showAiDifficultyPicker,
+              primary: true,
+            ),
 
-                          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-                          _buildMenuCard(
-                            icon: Icons.people_outline,
-                            iconColor: const Color(0xFF4DB6AC),
-                            title: 'Pass & Play (2 Players)',
-                            subtitle: 'Play locally against a friend on one device',
-                            onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
-                          ),
+            _buildMenuCard(
+              icon: Icons.people_outline,
+              iconColor: const Color(0xFF4DB6AC),
+              title: lang.passAndPlayTitle,
+              subtitle: lang.passAndPlaySubtitle,
+              onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
+            ),
 
-                          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-                          _buildMenuCard(
-                            icon: Icons.dashboard_customize_outlined,
-                            iconColor: const Color(0xFFFFD54F),
-                            title: 'Board Setup & Editor',
-                            subtitle: 'Custom setup with Erase, Rotate Baord & Selectors',
-                            onTap: () => _navigateToGame(startInPlayMode: false, vsAi: true),
-                          ),
+            _buildMenuCard(
+              icon: Icons.dashboard_customize_outlined,
+              iconColor: const Color(0xFFFFD54F),
+              title: lang.boardSetupTitle,
+              subtitle: lang.boardSetupSubtitle,
+              onTap: () => _navigateToGame(startInPlayMode: false, vsAi: true),
+            ),
 
-                          const SizedBox(height: 10),
-                          _buildMenuCard(
-                            icon: Icons.menu_book_outlined,
-                            iconColor: const Color(0xFFFFD54F),
-                            title: 'Rules & Guide',
-                            subtitle: 'Learn Rek shoulder-pole captures & tactics',
-                            onTap: _showRules,
-                          ),
+            const SizedBox(height: 10),
+            _buildMenuCard(
+              icon: Icons.menu_book_outlined,
+              iconColor: const Color(0xFFFFD54F),
+              title: lang.rulesAndGuideTitle,
+              subtitle: lang.rulesAndGuideSubtitle,
+              onTap: _showRules,
+            ),
 
-                          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-                          // Footer
-                          const Text(
-                            'Traditional Cambodian Cultural Game • 8×8 Rook Moves & Shoulder-Pole Captures',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white30,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                      ),
-                    ),
-                  );
+            // Footer
+            Text(
+              lang.appDescription,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white30,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildHeroEmblem() {
     return Container(
-      width: 120,
-      height: 120,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const RadialGradient(
           colors: [
             Color(0xFF2C3E50),
-            Color(0xFF1E272C),
+            Color(0xFF1A252F),
           ],
+        ),
+        border: Border.all(
+          color: const Color(0xFFD4AF37),
+          width: 3.5,
         ),
         boxShadow: [
           BoxShadow(
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
+            blurRadius: 18,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
             color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFFFD54F).withValues(alpha: 0.6),
-          width: 2.5,
-        ),
       ),
-      child: const Stack(
-        alignment: Alignment.center,
-        children: [
-          // Teal King Token (Left)
-          Positioned(
-            left: 18,
-            top: 28,
-            child: PieceTokenWidget(
-              player: PlayerColor.teal,
-              type: PieceType.crowned,
-              size: 48,
-              showShadow: true,
-            ),
+      child: Center(
+        child: SizedBox(
+          width: 74,
+          height: 74,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Lime Green piece in background
+              const Positioned(
+                bottom: 6,
+                right: 6,
+                child: PieceTokenWidget(
+                  player: PlayerColor.lime,
+                  type: PieceType.crowned,
+                  size: 40,
+                  isSelected: true,
+                ),
+              ),
+              // Teal piece in foreground
+              const Positioned(
+                top: 6,
+                left: 6,
+                child: PieceTokenWidget(
+                  player: PlayerColor.teal,
+                  type: PieceType.crowned,
+                  size: 40,
+                  isSelected: false,
+                ),
+              ),
+            ],
           ),
-          // Lime Green King Token (Right)
-          Positioned(
-            right: 18,
-            bottom: 28,
-            child: PieceTokenWidget(
-              player: PlayerColor.lime,
-              type: PieceType.crowned,
-              size: 48,
-              showShadow: true,
-            ),
-          ),
-          // Center VS or Star
-          Icon(
-            Icons.flash_on,
-            color: Color(0xFFFFD54F),
-            size: 26,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -600,26 +622,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             color: primary
-                ? const Color(0xFF2E7D32).withValues(alpha: 0.85)
-                : const Color(0xFF263238).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(12),
+                ? const Color(0xFF1B5E20).withValues(alpha: 0.6)
+                : const Color(0xFF263238).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: primary
-                  ? const Color(0xFF81C784)
-                  : Colors.white.withValues(alpha: 0.15),
+                  ? const Color(0xFF81C784).withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.12),
               width: primary ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -628,8 +649,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: iconColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: iconColor.withValues(alpha: 0.4),
+                    width: 1,
+                  ),
                 ),
                 child: Icon(icon, color: iconColor, size: 24),
               ),
@@ -640,27 +665,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: primary ? FontWeight.bold : FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
+                        color: primary ? Colors.white70 : Colors.white54,
+                        fontSize: 11.5,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios,
-                color: Colors.white.withValues(alpha: 0.5),
-                size: 16,
+                color: primary ? const Color(0xFF81C784) : Colors.white30,
+                size: 15,
               ),
             ],
           ),
@@ -668,5 +697,4 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
-
 }
