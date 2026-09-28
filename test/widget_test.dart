@@ -5,22 +5,42 @@ import 'package:game_rek/logic/rek_rules.dart';
 import 'package:game_rek/models/rek_piece.dart';
 
 void main() {
-  testWidgets('Rek board game UI initial elements test', (WidgetTester tester) async {
+  testWidgets('Rek app home page and navigation to game editor test', (WidgetTester tester) async {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
 
-    // Verify Top Menu elements
+    // 1. Verify Home Page elements
+    expect(find.text('ល្បែងរែក'), findsOneWidget);
+    expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
+    expect(find.text('Play vs AI'), findsOneWidget);
+    expect(find.text('Pass & Play (2 Players)'), findsOneWidget);
+    expect(find.text('Board Setup & Editor'), findsOneWidget);
+    expect(find.text('Load Game'), findsOneWidget);
+    expect(find.text('Rules & Guide'), findsOneWidget);
+
+    // 2. Tap "Board Setup & Editor" to navigate into the game screen
+    await tester.tap(find.text('Board Setup & Editor'));
+    await tester.pumpAndSettle();
+
+    // 3. Verify Top Menu elements on game screen
     expect(find.text('Erase all'), findsOneWidget);
     expect(find.text('Erase'), findsOneWidget);
     expect(find.text('Rotate Baord'), findsOneWidget);
     expect(find.byIcon(Icons.wifi), findsOneWidget);
 
-    // Verify Bottom Menu elements
+    // 4. Verify Bottom Menu elements on game screen
     expect(find.text('Save'), findsOneWidget);
     expect(find.text('Load Game'), findsOneWidget);
     expect(find.text('Play'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble), findsOneWidget);
+
+    // 5. Tap Yellow back arrow to return to Home Page
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    // 6. Verify we are back on Home Page
+    expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
   });
 
   test('Standard Cambodian Rek initial setup verification', () {

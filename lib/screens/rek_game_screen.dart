@@ -14,7 +14,18 @@ import '../widgets/save_load_dialog.dart';
 import '../widgets/game_status_overlay.dart';
 
 class RekGameScreen extends StatefulWidget {
-  const RekGameScreen({super.key});
+  final bool startInPlayMode;
+  final bool vsAi;
+  final AiDifficulty aiDifficulty;
+  final SavedGameState? initialSavedState;
+
+  const RekGameScreen({
+    super.key,
+    this.startInPlayMode = false,
+    this.vsAi = true,
+    this.aiDifficulty = AiDifficulty.medium,
+    this.initialSavedState,
+  });
 
   @override
   State<RekGameScreen> createState() => _RekGameScreenState();
@@ -46,14 +57,24 @@ class _RekGameScreenState extends State<RekGameScreen> {
   String? _lastNotification;
 
   // AI Opponent
-  bool _vsAi = true;
-  final RekAi _ai = RekAi(aiPlayer: PlayerColor.teal, difficulty: AiDifficulty.medium);
+  late bool _vsAi;
+  late RekAi _ai;
   bool _isAiThinking = false;
 
   @override
   void initState() {
     super.initState();
-    _resetBoardToStandard();
+    _isPlaying = widget.startInPlayMode;
+    _vsAi = widget.vsAi;
+    _ai = RekAi(aiPlayer: PlayerColor.teal, difficulty: widget.aiDifficulty);
+
+    if (widget.initialSavedState != null) {
+      _board = RekRules.cloneBoard(widget.initialSavedState!.board);
+      _currentTurn = widget.initialSavedState!.currentTurn;
+      _isPlaying = widget.initialSavedState!.isPlayMode;
+    } else {
+      _board = RekRules.createInitialBoard();
+    }
   }
 
   void _resetBoardToStandard() {
@@ -132,7 +153,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
   // ---------------------------------------------------------
   void _onBack() {
     HapticFeedback.lightImpact();
-    if (_isPlaying) {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else if (_isPlaying) {
       setState(() => _isPlaying = false);
     } else {
       _showOptionsModal();
@@ -414,6 +437,16 @@ class _RekGameScreenState extends State<RekGameScreen> {
               onChanged: (val) {
                 setState(() => _vsAi = val);
                 Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.home, color: Color(0xFFFFD54F)),
+              title: const Text('Return to Home Page', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                if (Navigator.of(context).canPop()) {
+                  Navigator.pop(context);
+                }
               },
             ),
             ListTile(
