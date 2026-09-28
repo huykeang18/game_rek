@@ -446,14 +446,14 @@ void main() {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
 
-    // 1. Verify points badge appears on top bar
+    // 1. Verify separate points button appears on top bar
     expect(find.text('100'), findsOneWidget);
 
-    // 2. Open Profile dialog
+    // 2. Open Profile dialog using username button
     await tester.tap(find.text(UserService.instance.username));
     await tester.pumpAndSettle();
 
-    // 3. Verify Points & Stats banner is shown
+    // 3. Verify Points & Stats banner is shown in profile dialog
     expect(find.text('100 pts'), findsOneWidget);
     expect(find.text('1 wins'), findsOneWidget);
 

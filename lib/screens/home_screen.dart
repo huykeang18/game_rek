@@ -427,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildTopBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF141C20).withValues(alpha: 0.6),
         border: const Border(bottom: BorderSide(color: Colors.white10)),
@@ -435,65 +435,87 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // User profile pill / badge
+          // Separated: 1) Username Button and 2) Points Button
           Flexible(
             child: ListenableBuilder(
               listenable: UserService.instance,
               builder: (context, _) {
-                return InkWell(
-                  onTap: _openProfile,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF263238).withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(UserService.instance.avatar, style: const TextStyle(fontSize: 15)),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            UserService.instance.username,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Button 1: Username & Avatar
+                    Flexible(
+                      child: InkWell(
+                        onTap: _openProfile,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4.5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+                            color: const Color(0xFF263238).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.45)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star, size: 10, color: Color(0xFFFFD54F)),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${UserService.instance.points}',
-                                style: const TextStyle(
-                                  color: Color(0xFFFFD54F),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
+                              Text(UserService.instance.avatar, style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  UserService.instance.username,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(width: 5),
+
+                    // Button 2: Separate Points Button
+                    InkWell(
+                      onTap: _openProfile,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B3B2B).withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.6)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, size: 11, color: Color(0xFFFFD54F)),
+                            const SizedBox(width: 2.5),
+                            Text(
+                              '${UserService.instance.points}',
+                              style: const TextStyle(
+                                color: Color(0xFFFFD54F),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
