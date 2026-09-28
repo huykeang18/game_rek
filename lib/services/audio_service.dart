@@ -74,9 +74,14 @@ class AudioService extends ChangeNotifier {
   ];
 
   final AudioPlayer _bgmPlayer = AudioPlayer(playerId: 'bgm_player');
-  final AudioPlayer _sfxPlayer = AudioPlayer(playerId: 'sfx_player');
+  static const int _sfxPoolSize = 4;
+  final List<AudioPlayer> _sfxPool = List.generate(
+    _sfxPoolSize,
+    (i) => AudioPlayer(playerId: 'sfx_player_$i'),
+  );
+  int _sfxPoolIndex = 0;
 
-  static final Map<String, String> _macAssetPaths = {};
+  static final Map<String, String> _localAssetPaths = {};
   int _bgmGeneration = 0;
   Process? _macBgmProcess;
   Process? _lastSfxProcess;
@@ -118,14 +123,19 @@ class AudioService extends ChangeNotifier {
 
       if (!kIsWeb && Platform.isMacOS) {
         Process.run('/usr/bin/killall', ['afplay']).catchError((_) => ProcessResult(0, 0, '', ''));
-        await _prepareMacAssets();
+      }
+
+      if (!kIsWeb) {
+        await _prepareAudioAssets();
       }
 
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmEnabled ? _bgmVolume : 0.0);
-      await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
-      await _sfxPlayer.setReleaseMode(ReleaseMode.stop);
-      await _sfxPlayer.setVolume(_sfxVolume);
+
+      for (final p in _sfxPool) {
+        await p.setReleaseMode(ReleaseMode.stop);
+        await p.setVolume(_sfxVolume);
+      }
 
       _initialized = true;
       notifyListeners();
@@ -139,14 +149,14 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  Future<void> _prepareMacAssets() async {
+  Future<void> _prepareAudioAssets() async {
     try {
       final tempDir = Directory('${Directory.systemTemp.path}/game_rek_audio');
       if (!tempDir.existsSync()) {
         tempDir.createSync(recursive: true);
       }
       for (final track in availableTracks) {
-        await _extractMacAsset(track.assetPath, tempDir);
+        await _extractLocalAsset(track.assetPath, tempDir);
       }
       const sfxList = [
         'audio/move.wav',
@@ -164,31 +174,31 @@ class AudioService extends ChangeNotifier {
         'audio/click.wav',
       ];
       for (final sfx in sfxList) {
-        await _extractMacAsset(sfx, tempDir);
+        await _extractLocalAsset(sfx, tempDir);
       }
     } catch (e) {
-      debugPrint('Error preparing mac audio assets: $e');
+      debugPrint('Error preparing audio assets: $e');
     }
   }
 
-  Future<void> _extractMacAsset(String assetPath, Directory tempDir) async {
+  Future<void> _extractLocalAsset(String assetPath, Directory tempDir) async {
     final localFile = File('assets/$assetPath');
     if (localFile.existsSync() && localFile.lengthSync() > 0) {
-      _macAssetPaths[assetPath] = localFile.absolute.path;
+      _localAssetPaths[assetPath] = localFile.absolute.path;
       return;
     }
     final fileName = assetPath.split('/').last;
     final targetFile = File('${tempDir.path}/$fileName');
     if (targetFile.existsSync() && targetFile.lengthSync() > 0) {
-      _macAssetPaths[assetPath] = targetFile.path;
+      _localAssetPaths[assetPath] = targetFile.path;
       return;
     }
     try {
       final data = await rootBundle.load('assets/$assetPath');
       await targetFile.writeAsBytes(data.buffer.asUint8List());
-      _macAssetPaths[assetPath] = targetFile.path;
+      _localAssetPaths[assetPath] = targetFile.path;
     } catch (e) {
-      debugPrint('Failed to extract mac asset ($assetPath): $e');
+      debugPrint('Failed to extract asset ($assetPath): $e');
     }
   }
 
@@ -207,7 +217,7 @@ class AudioService extends ChangeNotifier {
     final track = currentTrack;
 
     if (!kIsWeb && Platform.isMacOS) {
-      final path = _macAssetPaths[track.assetPath] ?? 'assets/${track.assetPath}';
+      final path = _localAssetPaths[track.assetPath] ?? 'assets/${track.assetPath}';
       if (File(path).existsSync()) {
         _isPlayingBgm = true;
         notifyListeners();
@@ -220,7 +230,11 @@ class AudioService extends ChangeNotifier {
       await _bgmPlayer.stop();
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmVolume);
-      await _bgmPlayer.play(AssetSource(track.assetPath));
+      final localPath = _localAssetPaths[track.assetPath];
+      final Source source = (localPath != null && File(localPath).existsSync())
+          ? DeviceFileSource(localPath)
+          : AssetSource(track.assetPath);
+      await _bgmPlayer.play(source);
       _isPlayingBgm = true;
       notifyListeners();
     } catch (e) {
@@ -333,7 +347,9 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _sfxPlayer.setVolume(clamped);
+      for (final p in _sfxPool) {
+        await p.setVolume(clamped);
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keySfxVolume, clamped);
     } catch (e) {
@@ -349,7 +365,7 @@ class AudioService extends ChangeNotifier {
 
     // On macOS, native afplay guarantees instant, zero-latency playback
     if (!kIsWeb && Platform.isMacOS) {
-      final path = _macAssetPaths[assetPath] ?? 'assets/$assetPath';
+      final path = _localAssetPaths[assetPath] ?? 'assets/$assetPath';
       if (File(path).existsSync()) {
         _lastSfxProcess?.kill();
         Process.start('/usr/bin/afplay', ['-v', vol.toString(), path]).then((proc) {
@@ -367,14 +383,22 @@ class AudioService extends ChangeNotifier {
     }
 
     try {
-      _sfxPlayer.stop().then((_) {
-        _sfxPlayer.setVolume(vol).then((_) {
-          _sfxPlayer.play(AssetSource(assetPath));
-        }).catchError((e) {
+      final player = _sfxPool[_sfxPoolIndex % _sfxPool.length];
+      _sfxPoolIndex++;
+
+      final localPath = _localAssetPaths[assetPath];
+      final Source source = (localPath != null && File(localPath).existsSync())
+          ? DeviceFileSource(localPath)
+          : AssetSource(assetPath);
+
+      player.setVolume(vol).then((_) {
+        player.play(source).catchError((e) {
           debugPrint('SFX play error ($assetPath): $e');
         });
-      }).catchError((e) {
-        debugPrint('SFX stop error: $e');
+      }).catchError((_) {
+        player.play(source).catchError((e) {
+          debugPrint('SFX fallback play error ($assetPath): $e');
+        });
       });
     } catch (e) {
       debugPrint('Error playing SFX ($assetPath): $e');
@@ -456,7 +480,9 @@ class AudioService extends ChangeNotifier {
     _lastSfxProcess?.kill();
     _lastSfxProcess = null;
     _bgmPlayer.dispose();
-    _sfxPlayer.dispose();
+    for (final p in _sfxPool) {
+      p.dispose();
+    }
     super.dispose();
   }
 }
