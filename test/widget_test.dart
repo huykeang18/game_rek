@@ -213,7 +213,12 @@ void main() {
     expect(find.text('Roneat Melody'), findsOneWidget);
     expect(find.text('Angkor Ambient'), findsOneWidget);
     expect(find.text('Peaceful Bamboo'), findsOneWidget);
+    expect(find.text('Khmer Chapei & Tro'), findsOneWidget);
+    expect(find.text('Kong Vong Gongs'), findsOneWidget);
     expect(find.text('Sound Effects (SFX)'), findsOneWidget);
+    expect(find.text('Test Move'), findsOneWidget);
+    expect(find.text('Test Rek'), findsOneWidget);
+    expect(find.text('Test Khat'), findsOneWidget);
 
     // Ensure Done button is visible and tap it
     await tester.ensureVisible(find.text('Done'));

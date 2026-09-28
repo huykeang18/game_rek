@@ -156,7 +156,11 @@ class LanguageService extends ChangeNotifier {
   String get sfxActiveSub => isKhmer ? 'សំឡេងគោះកូនអុក ស៊ីរែក និងជ័យជម្នះ' : 'Clacks, captures & fanfare active';
   String get sfxVolume => isKhmer ? 'កម្រិតសំឡេង SFX' : 'SFX Volume';
   String get testMove => isKhmer ? 'សាកល្បងដើរ' : 'Test Move';
-  String get testCapture => isKhmer ? 'សាកល្បងស៊ី' : 'Test Capture';
+  String get testCapture => isKhmer ? 'សាកល្បងរែក' : 'Test Rek';
+  String get testTrap => isKhmer ? 'សាកល្បងខាត់' : 'Test Khat';
+  String get testWin => isKhmer ? 'សាកល្បងឈ្នះ' : 'Test Win';
+  String get testDefeat => isKhmer ? 'សាកល្បងចាញ់' : 'Test Defeat';
+  String get testRotate => isKhmer ? 'បង្វិលក្តារ' : 'Test Rotate';
   String get done => isKhmer ? 'រួចរាល់' : 'Done';
 
   // Profile Edit Dialog

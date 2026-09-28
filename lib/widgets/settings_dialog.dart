@@ -371,9 +371,7 @@ class SettingsDialog extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      audio.playMove();
-                                    },
+                                    onPressed: () => audio.playMove(),
                                     icon: const Icon(Icons.touch_app, size: 14),
                                     label: Text(lang.testMove, style: const TextStyle(fontSize: 11)),
                                     style: OutlinedButton.styleFrom(
@@ -386,11 +384,69 @@ class SettingsDialog extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      audio.playCapture();
-                                    },
-                                    icon: const Icon(Icons.flash_on, size: 14),
+                                    onPressed: () => audio.playCapture(),
+                                    icon: const Icon(Icons.flash_on, size: 14, color: Color(0xFFFFD54F)),
                                     label: Text(lang.testCapture, style: const TextStyle(fontSize: 11)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white70,
+                                      side: const BorderSide(color: Colors.white24),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => audio.playTrap(),
+                                    icon: const Icon(Icons.lock, size: 14, color: Color(0xFF4DB6AC)),
+                                    label: Text(lang.testTrap, style: const TextStyle(fontSize: 11)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white70,
+                                      side: const BorderSide(color: Colors.white24),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => audio.playRotate(),
+                                    icon: const Icon(Icons.rotate_right, size: 14, color: Color(0xFF81C784)),
+                                    label: Text(lang.testRotate, style: const TextStyle(fontSize: 11)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white70,
+                                      side: const BorderSide(color: Colors.white24),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => audio.playWin(),
+                                    icon: const Icon(Icons.emoji_events, size: 14, color: Color(0xFFFFD54F)),
+                                    label: Text(lang.testWin, style: const TextStyle(fontSize: 11)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white70,
+                                      side: const BorderSide(color: Colors.white24),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => audio.playDefeat(),
+                                    icon: const Icon(Icons.sentiment_dissatisfied, size: 14, color: Color(0xFFE57373)),
+                                    label: Text(lang.testDefeat, style: const TextStyle(fontSize: 11)),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.white70,
                                       side: const BorderSide(color: Colors.white24),

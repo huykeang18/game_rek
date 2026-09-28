@@ -55,6 +55,20 @@ class AudioService extends ChangeNotifier {
       assetPath: 'audio/peaceful_bamboo.wav',
       icon: '🎋',
     ),
+    MusicTrack(
+      key: 'chapei',
+      title: 'Khmer Chapei & Tro',
+      subtitle: 'Plucked Lute & Bamboo Drone',
+      assetPath: 'audio/chapei_tro.wav',
+      icon: '🪕',
+    ),
+    MusicTrack(
+      key: 'kong_vong',
+      title: 'Kong Vong Gongs',
+      subtitle: 'Harmonic Circular Tuned Gongs',
+      assetPath: 'audio/kong_vong.wav',
+      icon: '🔔',
+    ),
   ];
 
   final AudioPlayer _bgmPlayer = AudioPlayer(playerId: 'bgm_player');
@@ -97,6 +111,8 @@ class AudioService extends ChangeNotifier {
 
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmEnabled ? _bgmVolume : 0.0);
+      await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
+      await _sfxPlayer.setReleaseMode(ReleaseMode.stop);
       await _sfxPlayer.setVolume(_sfxVolume);
 
       _initialized = true;
@@ -114,9 +130,10 @@ class AudioService extends ChangeNotifier {
   Future<void> _startBgm() async {
     try {
       final track = currentTrack;
-      await _bgmPlayer.setSource(AssetSource(track.assetPath));
+      await _bgmPlayer.stop();
+      await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmVolume);
-      await _bgmPlayer.resume();
+      await _bgmPlayer.play(AssetSource(track.assetPath));
       _isPlayingBgm = true;
       notifyListeners();
     } catch (e) {
@@ -214,53 +231,62 @@ class AudioService extends ChangeNotifier {
 
   // --- Sound Effects Playback ---
 
-  /// Play wooden piece placement sound
-  Future<void> playMove() async {
+  void _playSfx(String assetPath, {double volumeMultiplier = 1.0}) {
     if (!_sfxEnabled) return;
     try {
-      await _sfxPlayer.stop();
-      await _sfxPlayer.setVolume(_sfxVolume);
-      await _sfxPlayer.play(AssetSource('audio/move.wav'));
+      final vol = (_sfxVolume * volumeMultiplier).clamp(0.0, 1.0);
+      _sfxPlayer.stop().then((_) {
+        _sfxPlayer.setVolume(vol).then((_) {
+          _sfxPlayer.play(AssetSource(assetPath));
+        }).catchError((e) {
+          debugPrint('SFX play error ($assetPath): $e');
+        });
+      }).catchError((e) {
+        debugPrint('SFX stop error: $e');
+      });
     } catch (e) {
-      debugPrint('Error playing move SFX: $e');
+      debugPrint('Error playing SFX ($assetPath): $e');
     }
   }
 
-  /// Play capture gong / strike sound
-  Future<void> playCapture() async {
-    if (!_sfxEnabled) return;
-    try {
-      await _sfxPlayer.stop();
-      await _sfxPlayer.setVolume(_sfxVolume);
-      await _sfxPlayer.play(AssetSource('audio/capture.wav'));
-    } catch (e) {
-      debugPrint('Error playing capture SFX: $e');
-    }
-  }
+  /// Play wooden piece move clack
+  void playMove() => _playSfx('audio/move.wav');
 
-  /// Play victory fanfare
-  Future<void> playWin() async {
-    if (!_sfxEnabled) return;
-    try {
-      await _sfxPlayer.stop();
-      await _sfxPlayer.setVolume(_sfxVolume);
-      await _sfxPlayer.play(AssetSource('audio/win.wav'));
-    } catch (e) {
-      debugPrint('Error playing win SFX: $e');
-    }
-  }
+  /// Play subtle wooden piece selection tap
+  void playSelect() => _playSfx('audio/select.wav', volumeMultiplier: 0.9);
 
-  /// Play button tap click
-  Future<void> playClick() async {
-    if (!_sfxEnabled) return;
-    try {
-      await _sfxPlayer.stop();
-      await _sfxPlayer.setVolume(_sfxVolume * 0.7);
-      await _sfxPlayer.play(AssetSource('audio/click.wav'));
-    } catch (e) {
-      debugPrint('Error playing click SFX: $e');
-    }
-  }
+  /// Play editor piece placement snap
+  void playPlace() => _playSfx('audio/place.wav', volumeMultiplier: 0.95);
+
+  /// Play resonant traditional gong for Rek (shoulder-pole) capture
+  void playCapture() => _playSfx('audio/capture.wav', volumeMultiplier: 1.0);
+
+  /// Play Khat (surrounding trap) locking chime and strike
+  void playTrap() => _playSfx('audio/trap.wav', volumeMultiplier: 1.0);
+
+  /// Play dull wooden double-knock for illegal move or blocked square
+  void playInvalid() => _playSfx('audio/invalid.wav', volumeMultiplier: 0.85);
+
+  /// Play airy whoosh for board rotation
+  void playRotate() => _playSfx('audio/rotate.wav', volumeMultiplier: 0.9);
+
+  /// Play swift whisk for erasing an individual piece
+  void playErase() => _playSfx('audio/erase.wav', volumeMultiplier: 0.85);
+
+  /// Play cascading chime flourish for Erase All / Reset Board
+  void playClear() => _playSfx('audio/clear.wav', volumeMultiplier: 0.95);
+
+  /// Play gentle notification chime when AI executes its move
+  void playAiMove() => _playSfx('audio/ai_move.wav', volumeMultiplier: 0.85);
+
+  /// Play glorious victory fanfare when player wins
+  void playWin() => _playSfx('audio/win.wav', volumeMultiplier: 1.0);
+
+  /// Play solemn traditional phrase when player is defeated
+  void playDefeat() => _playSfx('audio/defeat.wav', volumeMultiplier: 1.0);
+
+  /// Play subtle button click tap
+  void playClick() => _playSfx('audio/click.wav', volumeMultiplier: 0.65);
 
   /// Pause BGM temporarily (e.g. app lifecycle background)
   Future<void> pauseBgm() async {

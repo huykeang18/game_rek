@@ -221,9 +221,252 @@ def generate_click_sfx(out_path):
         buffer[i] = math.sin(2 * math.pi * freq * (i / SAMPLE_RATE)) * env * 0.6
     write_wav(out_path, buffer)
 
+def generate_select_sfx(out_path):
+    # 0.08s soft wooden piece lift / selection tap
+    duration = 0.08
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        env = math.exp(-t * 32.0)
+        h1 = math.sin(2 * math.pi * 520.0 * t)
+        h2 = 0.4 * math.sin(2 * math.pi * 780.0 * t)
+        click = (math.sin(2 * math.pi * 1600.0 * t) if t < 0.005 else 0.0) * math.exp(-t * 200.0)
+        buffer[i] = (h1 + h2 + click * 0.5) * env
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.8 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_invalid_sfx(out_path):
+    # 0.18s dull low wooden double-thud for illegal move / blocked square
+    duration = 0.18
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        # First thud at 0.0s, second at 0.07s
+        thud1 = math.sin(2 * math.pi * 140.0 * t) * math.exp(-t * 25.0)
+        t2 = max(0.0, t - 0.07)
+        thud2 = (math.sin(2 * math.pi * 120.0 * t2) * math.exp(-t2 * 25.0)) if t >= 0.07 else 0.0
+        buffer[i] = thud1 * 0.7 + thud2 * 0.6
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.8 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_rotate_sfx(out_path):
+    # 0.35s pleasant airy whoosh / swish
+    import random
+    random.seed(42)
+    duration = 0.35
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    # Band-limited noise sweep
+    last_val = 0.0
+    for i in range(num_samples):
+        t = i / duration
+        # Envelope: rise and fall smoothly
+        env = max(0.0, math.sin(math.pi * t)) ** 1.8
+        # Frequency sweep: 200 -> 900 -> 300
+        center_f = 200.0 + 700.0 * math.sin(math.pi * t)
+        noise = (random.random() * 2.0 - 1.0)
+        # Simple IIR lowpass
+        alpha = min(0.6, 2 * math.pi * center_f / SAMPLE_RATE)
+        val = last_val + alpha * (noise - last_val)
+        last_val = val
+        buffer[i] = val * env
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_place_sfx(out_path):
+    # 0.12s crisp solid wooden piece placement for editor
+    duration = 0.12
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        env = math.exp(-t * 22.0)
+        h1 = math.sin(2 * math.pi * 420.0 * t)
+        h2 = 0.5 * math.sin(2 * math.pi * 680.0 * t) * math.exp(-t * 30.0)
+        click = (math.sin(2 * math.pi * 1400.0 * t) if t < 0.007 else 0.0)
+        buffer[i] = (h1 + h2 + click * 0.6) * env
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_erase_sfx(out_path):
+    # 0.2s whisk / brush sweep for deleting piece
+    import random
+    random.seed(101)
+    duration = 0.20
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    last_val = 0.0
+    for i in range(num_samples):
+        t = i / num_samples
+        env = (1.0 - t) * math.exp(-t * 5.0)
+        center_f = 800.0 - 450.0 * t
+        noise = (random.random() * 2.0 - 1.0)
+        alpha = min(0.5, 2 * math.pi * center_f / SAMPLE_RATE)
+        val = last_val + alpha * (noise - last_val)
+        last_val = val
+        tone = math.sin(2 * math.pi * (400.0 - 200.0 * t) * (i / SAMPLE_RATE)) * 0.3
+        buffer[i] = (val * 0.8 + tone) * env
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_clear_sfx(out_path):
+    # 0.6s cascading chime cascade for Erase All / Reset Board
+    notes = [
+        (523.25, 0.00, 0.25),  # C5
+        (659.25, 0.08, 0.25),  # E5
+        (783.99, 0.16, 0.25),  # G5
+        (1046.50, 0.24, 0.35), # C6
+    ]
+    duration = 0.65
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    for freq, start_t, dur in notes:
+        s = wood_bar(freq, dur)
+        mix_into(buffer, s, int(start_t * SAMPLE_RATE), gain=0.6)
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_trap_sfx(out_path):
+    # 0.6s surrounding capture (Khat) - tight locking clicks + gong
+    duration = 0.65
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    # Two crisp gate clicks
+    c1 = wood_bar(440.0, 0.15)
+    c2 = wood_bar(587.33, 0.20)
+    gong = bell_tone(349.23, 0.45) # F4
+    mix_into(buffer, c1, 0, gain=0.7)
+    mix_into(buffer, c2, int(0.10 * SAMPLE_RATE), gain=0.8)
+    mix_into(buffer, gong, int(0.18 * SAMPLE_RATE), gain=0.6)
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.9 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_defeat_sfx(out_path):
+    # 1.3s solemn descending traditional phrase
+    notes = [
+        (440.00, 0.00, 0.30),  # A4
+        (349.23, 0.28, 0.30),  # F4
+        (293.66, 0.56, 0.35),  # D4
+        (220.00, 0.88, 0.55),  # A3
+    ]
+    duration = 1.45
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    for freq, start_t, dur in notes:
+        s = wood_bar(freq, dur)
+        mix_into(buffer, s, int(start_t * SAMPLE_RATE), gain=0.7)
+    # Low bass resonance
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        hum = math.sin(2 * math.pi * 110.0 * t) * 0.15 * math.exp(-t * 1.5)
+        buffer[i] += hum
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_ai_move_sfx(out_path):
+    # 0.22s gentle two-tone chime for AI move
+    duration = 0.28
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    s1 = wood_bar(587.33, 0.14) # D5
+    s2 = wood_bar(880.00, 0.16) # A5
+    mix_into(buffer, s1, 0, gain=0.6)
+    mix_into(buffer, s2, int(0.08 * SAMPLE_RATE), gain=0.7)
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.75 for s in buffer]
+    write_wav(out_path, buffer)
+
+def plucked_string(freq, duration, sample_rate=SAMPLE_RATE):
+    """Simulates a plucked long-neck lute string (Chapei Dong Veng)."""
+    num_samples = int(duration * sample_rate)
+    samples = [0.0] * num_samples
+    for i in range(num_samples):
+        t = i / sample_rate
+        env = math.exp(-t * 4.0)
+        h1 = math.sin(2 * math.pi * freq * t)
+        h2 = 0.6 * math.sin(2 * math.pi * freq * 2.0 * t) * math.exp(-t * 6.0)
+        h3 = 0.35 * math.sin(2 * math.pi * freq * 3.0 * t) * math.exp(-t * 9.0)
+        h4 = 0.2 * math.sin(2 * math.pi * freq * 4.0 * t) * math.exp(-t * 12.0)
+        pluck = (math.sin(2 * math.pi * 2200 * t) if t < 0.005 else 0.0) * math.exp(-t * 300)
+        samples[i] = (h1 + h2 + h3 + h4 + pluck * 0.4) * env
+    return samples
+
+def generate_chapei_tro(out_path):
+    # 11-second Khmer Lute (Chapei) & Bowed Tro melody loop
+    duration = 11.0
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    melody = [
+        (220.00, 0.0, 1.4), # A3
+        (261.63, 0.8, 1.2), # C4
+        (293.66, 1.5, 1.6), # D4
+        (349.23, 2.5, 1.2), # F4
+        (392.00, 3.2, 1.5), # G4
+        (440.00, 4.2, 2.0), # A4
+        (392.00, 5.5, 1.2), # G4
+        (349.23, 6.2, 1.4), # F4
+        (293.66, 7.2, 1.8), # D4
+        (261.63, 8.5, 1.2), # C4
+        (220.00, 9.2, 2.0), # A3
+    ]
+    for freq, start_t, dur in melody:
+        samples = plucked_string(freq, dur)
+        mix_into(buffer, samples, int(start_t * SAMPLE_RATE), gain=0.65)
+
+    # Ambient bowed drone (Tro Sau - sustained open 5th)
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        drone1 = math.sin(2 * math.pi * 146.83 * t) * 0.08 # D3
+        drone2 = math.sin(2 * math.pi * 220.00 * t) * 0.06 # A3
+        fade = min(1.0, t / 0.6) * min(1.0, (duration - t) / 0.6)
+        buffer[i] = (buffer[i] + drone1 + drone2) * fade
+
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
+def generate_kong_vong(out_path):
+    # 10-second Cambodian circular tuned gong ensemble loop
+    duration = 10.0
+    num_samples = int(duration * SAMPLE_RATE)
+    buffer = [0.0] * num_samples
+    gongs = [
+        (261.63, 0.0, 3.0), # C4
+        (329.63, 1.2, 2.5), # E4
+        (392.00, 2.4, 2.5), # G4
+        (523.25, 3.6, 3.0), # C5
+        (440.00, 5.0, 2.5), # A4
+        (392.00, 6.2, 2.5), # G4
+        (329.63, 7.4, 2.5), # E4
+        (261.63, 8.5, 3.0), # C4
+    ]
+    for freq, start_t, dur in gongs:
+        samples = bell_tone(freq, dur)
+        mix_into(buffer, samples, int(start_t * SAMPLE_RATE), gain=0.5)
+
+    for i in range(num_samples):
+        t = i / SAMPLE_RATE
+        fade = min(1.0, t / 0.5) * min(1.0, (duration - t) / 0.5)
+        buffer[i] = buffer[i] * fade
+
+    max_val = max(abs(s) for s in buffer) or 1.0
+    buffer = [s / max_val * 0.85 for s in buffer]
+    write_wav(out_path, buffer)
+
 def main():
     out_dir = os.path.join(os.path.dirname(__file__), "assets", "audio")
     os.makedirs(out_dir, exist_ok=True)
+    # Existing assets
     generate_roneat_melody(os.path.join(out_dir, "roneat_melody.wav"))
     generate_angkor_ambient(os.path.join(out_dir, "angkor_ambient.wav"))
     generate_peaceful_bamboo(os.path.join(out_dir, "peaceful_bamboo.wav"))
@@ -231,6 +474,19 @@ def main():
     generate_capture_sfx(os.path.join(out_dir, "capture.wav"))
     generate_win_sfx(os.path.join(out_dir, "win.wav"))
     generate_click_sfx(os.path.join(out_dir, "click.wav"))
+
+    # Newly added rich assets
+    generate_select_sfx(os.path.join(out_dir, "select.wav"))
+    generate_invalid_sfx(os.path.join(out_dir, "invalid.wav"))
+    generate_rotate_sfx(os.path.join(out_dir, "rotate.wav"))
+    generate_place_sfx(os.path.join(out_dir, "place.wav"))
+    generate_erase_sfx(os.path.join(out_dir, "erase.wav"))
+    generate_clear_sfx(os.path.join(out_dir, "clear.wav"))
+    generate_trap_sfx(os.path.join(out_dir, "trap.wav"))
+    generate_defeat_sfx(os.path.join(out_dir, "defeat.wav"))
+    generate_ai_move_sfx(os.path.join(out_dir, "ai_move.wav"))
+    generate_chapei_tro(os.path.join(out_dir, "chapei_tro.wav"))
+    generate_kong_vong(os.path.join(out_dir, "kong_vong.wav"))
     print("All audio files generated successfully!")
 
 if __name__ == "__main__":

@@ -84,6 +84,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _resetBoardToStandard() {
+    AudioService.instance.playClear();
     setState(() {
       _board = RekRules.createInitialBoard();
       _selectedSquare = null;
@@ -101,6 +102,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   // Top Menu Actions
   // ---------------------------------------------------------
   void _onEraseAll() {
+    AudioService.instance.playClick();
     HapticFeedback.mediumImpact();
     showDialog(
       context: context,
@@ -116,6 +118,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
+              AudioService.instance.playClear();
               setState(() {
                 _board = List.generate(
                   RekRules.boardSize,
@@ -141,6 +144,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _onToggleErase() {
+    AudioService.instance.playClick();
     HapticFeedback.lightImpact();
     setState(() {
       _isEraserActive = !_isEraserActive;
@@ -148,6 +152,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _onRotateBoard() {
+    AudioService.instance.playRotate();
     HapticFeedback.lightImpact();
     setState(() {
       _isRotated = !_isRotated;
@@ -330,6 +335,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   // Piece Selectors
   // ---------------------------------------------------------
   void _onSelectPiece(PlayerColor player, PieceType type) {
+    AudioService.instance.playSelect();
     HapticFeedback.selectionClick();
     setState(() {
       _selectedPlayer = player;
@@ -353,8 +359,12 @@ class _RekGameScreenState extends State<RekGameScreen> {
     HapticFeedback.lightImpact();
     setState(() {
       if (_isEraserActive) {
+        if (_board[row][col] != null) {
+          AudioService.instance.playErase();
+        }
         _board[row][col] = null;
       } else {
+        AudioService.instance.playPlace();
         _board[row][col] = RekPiece(
           id: '${_selectedPlayer.name}_${DateTime.now().microsecondsSinceEpoch}',
           player: _selectedPlayer,
@@ -378,6 +388,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     // 2. Select a friendly piece
     if (clickedPiece != null && clickedPiece.player == _currentTurn) {
+      AudioService.instance.playSelect();
       HapticFeedback.selectionClick();
       setState(() {
         _selectedSquare = targetPos;
@@ -386,7 +397,10 @@ class _RekGameScreenState extends State<RekGameScreen> {
       return;
     }
 
-    // 3. Tapped elsewhere, deselect
+    // 3. Tapped elsewhere, invalid move or deselect
+    if (_selectedSquare != null && !_legalMoves.contains(targetPos)) {
+      AudioService.instance.playInvalid();
+    }
     setState(() {
       _selectedSquare = null;
       _legalMoves = [];
@@ -406,7 +420,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     } else if (move.surroundCaptures.isNotEmpty) {
       notif = '🔒 Trapped +${move.surroundCaptures.length} captured!';
       HapticFeedback.heavyImpact();
-      AudioService.instance.playCapture();
+      AudioService.instance.playTrap();
     } else {
       AudioService.instance.playMove();
     }
@@ -425,7 +439,12 @@ class _RekGameScreenState extends State<RekGameScreen> {
     });
 
     if (gameOver != null) {
-      AudioService.instance.playWin();
+      final isPlayerWinner = gameOver.winner == PlayerColor.lime;
+      if (isPlayerWinner || !_vsAi) {
+        AudioService.instance.playWin();
+      } else {
+        AudioService.instance.playDefeat();
+      }
       _showGameOverDialog(gameOver);
     } else if (_vsAi && _currentTurn == _ai.aiPlayer) {
       _triggerAiMove();
@@ -445,6 +464,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     setState(() => _isAiThinking = false);
 
     if (bestMove != null) {
+      AudioService.instance.playAiMove();
       _executeMove(bestMove.from, bestMove.to);
     }
   }
