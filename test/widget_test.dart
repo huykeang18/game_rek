@@ -5,6 +5,7 @@ import 'package:game_rek/logic/rek_rules.dart';
 import 'package:game_rek/models/rek_piece.dart';
 import 'package:game_rek/services/user_service.dart';
 import 'package:game_rek/services/language_service.dart';
+import 'package:game_rek/services/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -558,5 +559,45 @@ void main() {
 
     // Back to Home screen in Khmer
     expect(find.text('ល្បែងរែក'), findsOneWidget);
+  });
+
+  testWidgets('When not in app game, music is closed/paused; when returned, music resumes', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Initially in the app foreground
+    expect(AudioService.instance.isAppInBackground, isFalse);
+
+    // 2. User minimizes or leaves the app (paused)
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pumpAndSettle();
+
+    // Verify music is closed and marked in background
+    expect(AudioService.instance.isAppInBackground, isTrue);
+    expect(AudioService.instance.isPlayingBgm, isFalse);
+
+    // 3. User returns to the app (resumed)
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    // Verify app marked foreground
+    expect(AudioService.instance.isAppInBackground, isFalse);
+
+    // 4. Test inactive state (e.g. app switcher, incoming call, or window focus lost)
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pumpAndSettle();
+
+    expect(AudioService.instance.isAppInBackground, isTrue);
+    expect(AudioService.instance.isPlayingBgm, isFalse);
+
+    // Return to app again
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(AudioService.instance.isAppInBackground, isFalse);
   });
 }

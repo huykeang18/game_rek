@@ -24,12 +24,16 @@ class MusicTrack {
 
 /// Service managing background music (BGM) and sound effects (SFX),
 /// with persistence via SharedPreferences.
-class AudioService extends ChangeNotifier {
+class AudioService extends ChangeNotifier with WidgetsBindingObserver {
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
   static AudioService get instance => _instance;
 
-  AudioService._internal();
+  AudioService._internal() {
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
+  }
 
   static const String _keyBgmEnabled = 'rek_bgm_enabled';
   static const String _keyBgmVolume = 'rek_bgm_volume';
@@ -125,6 +129,8 @@ class AudioService extends ChangeNotifier {
   double _sfxVolume = 0.8;
   bool _initialized = false;
   bool _isPlayingBgm = false;
+  bool _appInBackground = false;
+  bool _wasPlayingBeforeBackground = false;
 
   bool get bgmEnabled => _bgmEnabled;
   double get bgmVolume => _bgmVolume;
@@ -133,6 +139,7 @@ class AudioService extends ChangeNotifier {
   double get sfxVolume => _sfxVolume;
   bool get isPlayingBgm => _isPlayingBgm;
   bool get isInitialized => _initialized;
+  bool get isAppInBackground => _appInBackground;
 
   MusicTrack get currentTrack {
     return availableTracks.firstWhere(
@@ -144,6 +151,10 @@ class AudioService extends ChangeNotifier {
   /// Initialize audio system, load saved preferences, and start BGM if enabled
   Future<void> init() async {
     if (_initialized) return;
+
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -175,7 +186,7 @@ class AudioService extends ChangeNotifier {
       });
 
       _bgmPlayer.onPlayerComplete.listen((_) {
-        if (_bgmEnabled) {
+        if (_bgmEnabled && !_appInBackground) {
           _startBgm();
         }
       });
@@ -257,7 +268,7 @@ class AudioService extends ChangeNotifier {
     _macBgmProcess?.kill();
     _macBgmProcess = null;
 
-    if (!_bgmEnabled) {
+    if (!_bgmEnabled || _appInBackground) {
       _isPlayingBgm = false;
       notifyListeners();
       return;
@@ -293,7 +304,7 @@ class AudioService extends ChangeNotifier {
   }
 
   void _runMacBgmLoop(String path, int gen) async {
-    while (_bgmGeneration == gen && _bgmEnabled && _isPlayingBgm) {
+    while (_bgmGeneration == gen && _bgmEnabled && _isPlayingBgm && !_appInBackground) {
       try {
         final proc = await Process.start('/usr/bin/afplay', ['-v', _bgmVolume.toString(), path]);
         if (_bgmGeneration != gen) {
@@ -409,7 +420,7 @@ class AudioService extends ChangeNotifier {
   // --- Sound Effects Playback ---
 
   void _playSfx(String assetPath, {double volumeMultiplier = 1.0}) {
-    if (!_sfxEnabled) return;
+    if (!_sfxEnabled || _appInBackground) return;
     final vol = (_sfxVolume * volumeMultiplier).clamp(0.0, 1.0);
 
     // On macOS, native afplay guarantees instant, zero-latency playback
@@ -513,7 +524,7 @@ class AudioService extends ChangeNotifier {
   /// Ensure background music is actively playing
   Future<void> ensureBgmPlaying() async {
     try {
-      if (!_bgmEnabled) return;
+      if (!_bgmEnabled || _appInBackground) return;
       if (!kIsWeb && Platform.isMacOS) {
         if (_macBgmProcess == null || !_isPlayingBgm) {
           await _startBgm();
@@ -530,6 +541,41 @@ class AudioService extends ChangeNotifier {
 
   /// Resume BGM
   Future<void> resumeBgm() async => ensureBgmPlaying();
+
+  /// Called when the app moves to background / paused / inactive / hidden / detached
+  void handleAppPaused() {
+    if (_appInBackground) return;
+    _appInBackground = true;
+    _wasPlayingBeforeBackground = _isPlayingBgm && _bgmEnabled;
+    pauseBgm();
+    for (final p in _sfxPool) {
+      try {
+        p.stop();
+      } catch (_) {}
+    }
+    _lastSfxProcess?.kill();
+    _lastSfxProcess = null;
+  }
+
+  /// Called when the app returns to foreground / active / resumed
+  void handleAppResumed() {
+    _appInBackground = false;
+    if (_bgmEnabled && (_wasPlayingBeforeBackground || !_isPlayingBgm)) {
+      ensureBgmPlaying();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      handleAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      handleAppResumed();
+    }
+  }
 
   bool _disposed = false;
 
@@ -557,6 +603,9 @@ class AudioService extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
     _bgmGeneration++;
     _macBgmProcess?.kill();
     _macBgmProcess = null;
