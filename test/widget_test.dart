@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_rek/main.dart';
 import 'package:game_rek/logic/rek_rules.dart';
 import 'package:game_rek/models/rek_piece.dart';
+import 'package:game_rek/services/user_service.dart';
 
 void main() {
   testWidgets('Rek app home page and navigation to game editor test', (WidgetTester tester) async {
@@ -149,5 +150,71 @@ void main() {
     expect(move.rekCaptures.length, 2);
     expect(move.rekCaptures.contains(const BoardPosition(3, 2)), isTrue);
     expect(move.rekCaptures.contains(const BoardPosition(3, 4)), isTrue);
+  });
+
+  testWidgets('Username profile view and editing test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // Verify default username is displayed on top bar
+    expect(find.text(UserService.instance.username), findsOneWidget);
+
+    // Tap on username badge to open ProfileEditDialog
+    await tester.tap(find.text(UserService.instance.username));
+    await tester.pumpAndSettle();
+
+    // Verify dialog content
+    expect(find.text('Edit Player Profile'), findsOneWidget);
+    expect(find.text('Choose Avatar'), findsOneWidget);
+    expect(find.text('Player Username'), findsOneWidget);
+
+    // Enter a new username
+    await tester.enterText(find.byType(TextFormField), 'AngkorChampion');
+    await tester.pumpAndSettle();
+
+    // Ensure Save Profile button is visible and tap it
+    await tester.ensureVisible(find.text('Save Profile'));
+    await tester.tap(find.text('Save Profile'));
+    await tester.pumpAndSettle();
+
+    // Verify username is updated
+    expect(find.text('AngkorChampion'), findsOneWidget);
+    expect(UserService.instance.username, 'AngkorChampion');
+  });
+
+  testWidgets('Music and sound settings dialog test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // Tap Settings icon on the top bar
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    // Verify Settings dialog
+    expect(find.text('Settings & Audio'), findsOneWidget);
+    expect(find.text('Background Music (BGM)'), findsOneWidget);
+    expect(find.text('Enable Music'), findsOneWidget);
+    expect(find.text('Roneat Melody'), findsOneWidget);
+    expect(find.text('Angkor Ambient'), findsOneWidget);
+    expect(find.text('Peaceful Bamboo'), findsOneWidget);
+    expect(find.text('Sound Effects (SFX)'), findsOneWidget);
+
+    // Ensure Done button is visible and tap it
+    await tester.ensureVisible(find.text('Done'));
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    // Verify returned to home screen
+    expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
   });
 }

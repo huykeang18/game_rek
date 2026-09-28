@@ -3,8 +3,12 @@ import 'package:flutter/services.dart';
 import '../models/rek_piece.dart';
 import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
+import '../services/audio_service.dart';
+import '../services/user_service.dart';
 import '../widgets/piece_token_widget.dart';
+import '../widgets/profile_edit_dialog.dart';
 import '../widgets/rules_dialog.dart';
+import '../widgets/settings_dialog.dart';
 import 'rek_game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,11 +43,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
+  void _openSettings() {
+    AudioService.instance.playClick();
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (_) => const SettingsDialog(),
+    );
+  }
+
+  void _openProfile() {
+    AudioService.instance.playClick();
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (_) => const ProfileEditDialog(),
+    );
+  }
+
   void _navigateToGame({
     bool startInPlayMode = false,
     bool vsAi = true,
     SavedGameState? initialSavedState,
   }) {
+    AudioService.instance.playClick();
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -58,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showRules() {
+    AudioService.instance.playClick();
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
@@ -66,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showAiDifficultyPicker() {
+    AudioService.instance.playClick();
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF263238),
@@ -170,19 +195,115 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 680;
-              return SingleChildScrollView(
-                child: Center(
-                  child: isWide
-                      ? _buildWideLayout(constraints)
-                      : _buildCompactLayout(constraints),
+          child: Column(
+            children: [
+              _buildTopBar(),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 680;
+                    return SingleChildScrollView(
+                      child: Center(
+                        child: isWide
+                            ? _buildWideLayout(constraints)
+                            : _buildCompactLayout(constraints),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141C20).withValues(alpha: 0.6),
+        border: const Border(bottom: BorderSide(color: Colors.white10)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // User profile pill / badge
+          Flexible(
+            child: ListenableBuilder(
+              listenable: UserService.instance,
+              builder: (context, _) {
+                return InkWell(
+                  onTap: _openProfile,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF263238).withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(UserService.instance.avatar, style: const TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            UserService.instance.username,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit, size: 12, color: Color(0xFFFFD54F)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Settings and Music quick controls
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Music toggle button
+              ListenableBuilder(
+                listenable: AudioService.instance,
+                builder: (context, _) {
+                  final audio = AudioService.instance;
+                  return IconButton(
+                    icon: Icon(
+                      audio.bgmEnabled ? Icons.music_note : Icons.music_off,
+                      color: audio.bgmEnabled ? const Color(0xFF81C784) : Colors.white38,
+                      size: 22,
+                    ),
+                    tooltip: audio.bgmEnabled ? 'Music: ON' : 'Music: OFF',
+                    onPressed: () {
+                      audio.playClick();
+                      audio.setBgmEnabled(!audio.bgmEnabled);
+                    },
+                  );
+                },
+              ),
+              // Settings button
+              IconButton(
+                icon: const Icon(Icons.settings, color: Color(0xFFFFD54F), size: 22),
+                tooltip: 'Settings & Audio',
+                onPressed: _openSettings,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

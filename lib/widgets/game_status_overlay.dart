@@ -9,6 +9,9 @@ class GameStatusBanner extends StatelessWidget {
   final GameOverResult? gameOverResult;
   final VoidCallback onReset;
   final VoidCallback onEdit;
+  final String? playerName;
+  final String? playerAvatar;
+  final bool vsAi;
 
   const GameStatusBanner({
     super.key,
@@ -18,6 +21,9 @@ class GameStatusBanner extends StatelessWidget {
     this.gameOverResult,
     required this.onReset,
     required this.onEdit,
+    this.playerName,
+    this.playerAvatar,
+    this.vsAi = true,
   });
 
   @override
@@ -49,6 +55,12 @@ class GameStatusBanner extends StatelessWidget {
     }
 
     final isTeal = currentTurn == PlayerColor.teal;
+    final name = playerName ?? 'Player';
+    final avatar = playerAvatar ?? '👤';
+
+    final turnLabel = isTeal
+        ? (vsAi ? 'Turn: 🤖 AI (TEAL)' : 'Turn: 👥 P2 (TEAL)')
+        : 'Turn: $avatar $name (LIME)';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -66,33 +78,38 @@ class GameStatusBanner extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isTeal ? const Color(0xFF26A69A) : const Color(0xFF8BC34A),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isTeal ? Colors.tealAccent : Colors.lightGreenAccent)
-                          .withValues(alpha: 0.6),
-                      blurRadius: 6,
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isTeal ? const Color(0xFF26A69A) : const Color(0xFF8BC34A),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isTeal ? Colors.tealAccent : Colors.lightGreenAccent)
+                            .withValues(alpha: 0.6),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    turnLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                  ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Turn: ${isTeal ? "TEAL" : "LIME GREEN"}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (lastNotification != null)
             Text(

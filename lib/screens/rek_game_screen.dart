@@ -5,6 +5,8 @@ import '../models/move.dart';
 import '../logic/rek_rules.dart';
 import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
+import '../services/audio_service.dart';
+import '../services/user_service.dart';
 import '../widgets/piece_selector_bar.dart';
 import '../widgets/top_menu_bar.dart';
 import '../widgets/bottom_menu_bar.dart';
@@ -12,6 +14,8 @@ import '../widgets/wood_board.dart';
 import '../widgets/rules_dialog.dart';
 import '../widgets/save_load_dialog.dart';
 import '../widgets/game_status_overlay.dart';
+import '../widgets/profile_edit_dialog.dart';
+import '../widgets/settings_dialog.dart';
 
 class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
@@ -204,6 +208,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _onPlay() {
+    AudioService.instance.playClick();
     HapticFeedback.mediumImpact();
     setState(() {
       _isPlaying = !_isPlaying;
@@ -221,10 +226,81 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _onChat() {
+    AudioService.instance.playClick();
     HapticFeedback.lightImpact();
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) => RulesDialog(moveHistory: _moveHistory),
+      backgroundColor: const Color(0xFF263238),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.music_note, color: Color(0xFFFFD54F)),
+                title: const Text('Music & Audio Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Soundtrack tracks, volume & effects', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => const SettingsDialog(),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.person, color: Color(0xFF81C784)),
+                title: const Text('Change Username & Avatar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  'Current: ${UserService.instance.avatar} ${UserService.instance.username}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => const ProfileEditDialog(),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
+                title: const Text('Rules & Move History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: Text('${_moveHistory.length} moves played', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showDialog(
+                    context: context,
+                    builder: (_) => RulesDialog(moveHistory: _moveHistory),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.refresh, color: Color(0xFFFF8A65)),
+                title: const Text('Reset Board', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Reset back to standard Rek setup', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _resetBoardToStandard();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -304,9 +380,13 @@ class _RekGameScreenState extends State<RekGameScreen> {
     if (move.rekCaptures.isNotEmpty) {
       notif = '⚡ REK! +${move.rekCaptures.length} captured!';
       HapticFeedback.heavyImpact();
+      AudioService.instance.playCapture();
     } else if (move.surroundCaptures.isNotEmpty) {
       notif = '🔒 Trapped +${move.surroundCaptures.length} captured!';
       HapticFeedback.heavyImpact();
+      AudioService.instance.playCapture();
+    } else {
+      AudioService.instance.playMove();
     }
 
     final nextTurn = _currentTurn == PlayerColor.lime ? PlayerColor.teal : PlayerColor.lime;
@@ -323,6 +403,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     });
 
     if (gameOver != null) {
+      AudioService.instance.playWin();
       _showGameOverDialog(gameOver);
     } else if (_vsAi && _currentTurn == _ai.aiPlayer) {
       _triggerAiMove();
@@ -347,19 +428,30 @@ class _RekGameScreenState extends State<RekGameScreen> {
   }
 
   void _showGameOverDialog(GameOverResult result) {
+    final isPlayerWinner = result.winner == PlayerColor.lime;
+    final winnerName = isPlayerWinner
+        ? '${UserService.instance.avatar} ${UserService.instance.username.toUpperCase()}'
+        : (_vsAi ? '🤖 REK AI' : '👥 PLAYER 2');
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF263238),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+        ),
         title: Row(
           children: [
             const Icon(Icons.emoji_events, color: Color(0xFFFFD54F), size: 28),
             const SizedBox(width: 8),
-            Text(
-              '${result.winner.name.toUpperCase()} WINS!',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            Flexible(
+              child: Text(
+                '$winnerName WINS!',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -370,6 +462,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
         actions: [
           TextButton(
             onPressed: () {
+              AudioService.instance.playClick();
               Navigator.pop(context);
               setState(() => _isPlaying = false);
             },
@@ -378,6 +471,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
             onPressed: () {
+              AudioService.instance.playClick();
               Navigator.pop(context);
               _resetBoardToStandard();
               setState(() => _isPlaying = true);
@@ -498,13 +592,19 @@ class _RekGameScreenState extends State<RekGameScreen> {
         ),
 
         // Active Game Status / Banner
-        GameStatusBanner(
-          currentTurn: _currentTurn,
-          isPlayMode: _isPlaying,
-          lastNotification: _lastNotification,
-          gameOverResult: _gameOverResult,
-          onReset: _resetBoardToStandard,
-          onEdit: () => setState(() => _isPlaying = false),
+        ListenableBuilder(
+          listenable: UserService.instance,
+          builder: (context, _) => GameStatusBanner(
+            currentTurn: _currentTurn,
+            isPlayMode: _isPlaying,
+            lastNotification: _lastNotification,
+            gameOverResult: _gameOverResult,
+            onReset: _resetBoardToStandard,
+            onEdit: () => setState(() => _isPlaying = false),
+            playerName: UserService.instance.username,
+            playerAvatar: UserService.instance.avatar,
+            vsAi: _vsAi,
+          ),
         ),
 
         // Main 8x8 Wood Board (constrained to never overflow on tablets or desktop)
@@ -575,13 +675,19 @@ class _RekGameScreenState extends State<RekGameScreen> {
               const SizedBox(width: 10),
               // Status banner in landscape top bar
               Expanded(
-                child: GameStatusBanner(
-                  currentTurn: _currentTurn,
-                  isPlayMode: _isPlaying,
-                  lastNotification: _lastNotification,
-                  gameOverResult: _gameOverResult,
-                  onReset: _resetBoardToStandard,
-                  onEdit: () => setState(() => _isPlaying = false),
+                child: ListenableBuilder(
+                  listenable: UserService.instance,
+                  builder: (context, _) => GameStatusBanner(
+                    currentTurn: _currentTurn,
+                    isPlayMode: _isPlaying,
+                    lastNotification: _lastNotification,
+                    gameOverResult: _gameOverResult,
+                    onReset: _resetBoardToStandard,
+                    onEdit: () => setState(() => _isPlaying = false),
+                    playerName: UserService.instance.username,
+                    playerAvatar: UserService.instance.avatar,
+                    vsAi: _vsAi,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

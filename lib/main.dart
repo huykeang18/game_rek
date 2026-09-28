@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'services/audio_service.dart';
+import 'services/user_service.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -10,6 +12,11 @@ void main() {
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+  
+  // Initialize user profile and audio systems
+  await UserService.instance.init();
+  await AudioService.instance.init();
+
   runApp(const RekGameApp());
 }
 
