@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MusicTrack {
@@ -73,6 +75,36 @@ class AudioService extends ChangeNotifier {
     ),
   ];
 
+  static final AudioContext _bgmContext = AudioContext(
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+      contentType: AndroidContentType.music,
+      usageType: AndroidUsageType.game,
+      audioFocus: AndroidAudioFocus.gain,
+    ),
+    iOS: AudioContextIOS(
+      category: AVAudioSessionCategory.playback,
+      options: const {
+        AVAudioSessionOptions.mixWithOthers,
+      },
+    ),
+  );
+
+  static final AudioContext _sfxContext = AudioContext(
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.game,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+    iOS: AudioContextIOS(
+      category: AVAudioSessionCategory.ambient,
+      options: const {},
+    ),
+  );
+
   final AudioPlayer _bgmPlayer = AudioPlayer(playerId: 'bgm_player');
   static const int _sfxPoolSize = 4;
   final List<AudioPlayer> _sfxPool = List.generate(
@@ -129,10 +161,27 @@ class AudioService extends ChangeNotifier {
         await _prepareAudioAssets();
       }
 
+      await _bgmPlayer.setAudioContext(_bgmContext);
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmEnabled ? _bgmVolume : 0.0);
 
+      _bgmPlayer.onPlayerStateChanged.listen((state) {
+        if (state == PlayerState.playing) {
+          _isPlayingBgm = true;
+        } else if (state == PlayerState.paused || state == PlayerState.stopped) {
+          _isPlayingBgm = false;
+        }
+        notifyListeners();
+      });
+
+      _bgmPlayer.onPlayerComplete.listen((_) {
+        if (_bgmEnabled) {
+          _startBgm();
+        }
+      });
+
       for (final p in _sfxPool) {
+        await p.setAudioContext(_sfxContext);
         await p.setReleaseMode(ReleaseMode.stop);
         await p.setVolume(_sfxVolume);
       }
@@ -234,7 +283,7 @@ class AudioService extends ChangeNotifier {
       final Source source = (localPath != null && File(localPath).existsSync())
           ? DeviceFileSource(localPath)
           : AssetSource(track.assetPath);
-      await _bgmPlayer.play(source);
+      await _bgmPlayer.play(source, ctx: _bgmContext);
       _isPlayingBgm = true;
       notifyListeners();
     } catch (e) {
@@ -392,11 +441,11 @@ class AudioService extends ChangeNotifier {
           : AssetSource(assetPath);
 
       player.setVolume(vol).then((_) {
-        player.play(source).catchError((e) {
+        player.play(source, volume: vol, ctx: _sfxContext).catchError((e) {
           debugPrint('SFX play error ($assetPath): $e');
         });
       }).catchError((_) {
-        player.play(source).catchError((e) {
+        player.play(source, volume: vol, ctx: _sfxContext).catchError((e) {
           debugPrint('SFX fallback play error ($assetPath): $e');
         });
       });
@@ -461,19 +510,53 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Resume BGM
-  Future<void> resumeBgm() async {
+  /// Ensure background music is actively playing
+  Future<void> ensureBgmPlaying() async {
     try {
-      if (_bgmEnabled && !_isPlayingBgm) {
+      if (!_bgmEnabled) return;
+      if (!kIsWeb && Platform.isMacOS) {
+        if (_macBgmProcess == null || !_isPlayingBgm) {
+          await _startBgm();
+        }
+        return;
+      }
+      if (_bgmPlayer.state != PlayerState.playing) {
         await _startBgm();
       }
     } catch (e) {
-      debugPrint('Error resuming BGM: $e');
+      debugPrint('Error ensuring BGM playing: $e');
+    }
+  }
+
+  /// Resume BGM
+  Future<void> resumeBgm() async => ensureBgmPlaying();
+
+  bool _disposed = false;
+
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    try {
+      final binding = WidgetsBinding.instance;
+      if (binding.schedulerPhase == SchedulerPhase.idle) {
+        super.notifyListeners();
+      } else {
+        binding.addPostFrameCallback((_) {
+          if (!_disposed) {
+            super.notifyListeners();
+          }
+        });
+      }
+    } catch (_) {
+      if (!_disposed) {
+        super.notifyListeners();
+      }
     }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _bgmGeneration++;
     _macBgmProcess?.kill();
     _macBgmProcess = null;

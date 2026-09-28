@@ -119,6 +119,12 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _board = RekRules.createInitialBoard();
     }
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && AudioService.instance.bgmEnabled) {
+        AudioService.instance.ensureBgmPlaying();
+      }
+    });
+
     if (_isPlaying) {
       AudioService.instance.playGameStart();
       _startTimer();

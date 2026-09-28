@@ -92,7 +92,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           initialTimeLimitSeconds: timeLimitSeconds,
         ),
       ),
-    );
+    ).then((_) {
+      if (AudioService.instance.bgmEnabled) {
+        AudioService.instance.ensureBgmPlaying();
+      }
+    });
   }
 
   void _showRules() {
