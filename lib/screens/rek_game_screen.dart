@@ -245,6 +245,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF263238),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -255,82 +256,92 @@ class _RekGameScreenState extends State<RekGameScreen> {
           final lang = LanguageService.instance;
 
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Language Switcher option
-                  ListTile(
-                    leading: const Icon(Icons.language, color: Color(0xFF64B5F6)),
-                    title: Text(
-                      lang.languageSection,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    const SizedBox(height: 10),
+                    // Language Switcher option
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.language, color: Color(0xFF64B5F6)),
+                      title: Text(
+                        lang.languageSection,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      trailing: const LanguageToggleButton(isCompact: true),
+                      onTap: () {
+                        AudioService.instance.playClick();
+                        LanguageService.instance.toggleLanguage();
+                      },
                     ),
-                    trailing: const LanguageToggleButton(isCompact: true),
-                    onTap: () {
-                      AudioService.instance.playClick();
-                      LanguageService.instance.toggleLanguage();
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.music_note, color: Color(0xFFFFD54F)),
-                    title: Text(lang.musicSettingsTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(lang.musicSettingsSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      showDialog(
-                        context: context,
-                        builder: (_) => const SettingsDialog(),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.person, color: Color(0xFF81C784)),
-                    title: Text(lang.changeProfileTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      '${lang.playerUsername}: ${UserService.instance.avatar} ${UserService.instance.username}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.music_note, color: Color(0xFFFFD54F)),
+                      title: Text(lang.musicSettingsTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(lang.musicSettingsSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        showDialog(
+                          context: context,
+                          builder: (_) => const SettingsDialog(),
+                        );
+                      },
                     ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      showDialog(
-                        context: context,
-                        builder: (_) => const ProfileEditDialog(),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
-                    title: Text(lang.rulesAndHistoryTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(lang.movesPlayed(_moveHistory.length), style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      showDialog(
-                        context: context,
-                        builder: (_) => RulesDialog(moveHistory: _moveHistory),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.refresh, color: Color(0xFFFF8A65)),
-                    title: Text(lang.resetBoardTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(lang.resetBoardSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _resetBoardToStandard();
-                    },
-                  ),
-                ],
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.person, color: Color(0xFF81C784)),
+                      title: Text(lang.changeProfileTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        '${lang.playerUsername}: ${UserService.instance.avatar} ${UserService.instance.username}',
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        showDialog(
+                          context: context,
+                          builder: (_) => const ProfileEditDialog(),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
+                      title: Text(lang.rulesAndHistoryTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(lang.movesPlayed(_moveHistory.length), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        showDialog(
+                          context: context,
+                          builder: (_) => RulesDialog(moveHistory: _moveHistory),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.refresh, color: Color(0xFFFF8A65)),
+                      title: Text(lang.resetBoardTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(lang.resetBoardSubtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _resetBoardToStandard();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -537,15 +548,17 @@ class _RekGameScreenState extends State<RekGameScreen> {
   void _showOptionsModal() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF263238),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (_) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             const Text(
               'Cambodian Rek Game Options',
               style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -593,8 +606,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
