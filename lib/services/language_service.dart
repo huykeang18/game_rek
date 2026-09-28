@@ -186,6 +186,10 @@ class LanguageService extends ChangeNotifier {
   // Match Timer Strings
   String get timerSettings => isKhmer ? 'កំណត់ម៉ោងលេង' : 'Match Timer';
   String get timerSettingsSub => isKhmer ? 'កំណត់រយៈពេលគិតសម្រាប់អ្នកលេងម្នាក់ៗ' : 'Choose time control per player';
+  String get selectTimer => isKhmer ? 'ម៉ោងលេង' : 'Match Timer';
+  String get timer5Mn => isKhmer ? '៥ នាទី (5 mn)' : '5 mn (Standard)';
+  String get timer15Mn => isKhmer ? '១៥ នាទី (15 mn)' : '15 mn (Medium)';
+  String get timer30Mn => isKhmer ? '៣០ នាទី (30 mn)' : '30 mn (Long)';
   String get timer3Min => isKhmer ? '៣ នាទី (លឿន)' : '3 Minutes (Blitz)';
   String get timer5Min => isKhmer ? '៥ នាទី (ស្តង់ដារ)' : '5 Minutes (Standard)';
   String get timer10Min => isKhmer ? '១០ នាទី (បុរាណ)' : '10 Minutes (Classical)';

@@ -355,6 +355,15 @@ void main() {
     await tester.tap(find.text('Pass & Play (2 Players)'));
     await tester.pumpAndSettle();
 
+    // Verify timer options are shown in the bottom modal sheet
+    expect(find.text('5 mn'), findsOneWidget);
+    expect(find.text('15 mn'), findsOneWidget);
+    expect(find.text('30 mn'), findsOneWidget);
+
+    // Tap "Start Match" to launch game
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
     // 2. Verify Erase all, Erase, and Save buttons are NOT present
     expect(find.text('Erase all'), findsNothing);
     expect(find.text('Erase'), findsNothing);
@@ -364,9 +373,55 @@ void main() {
     expect(find.text('Rotate Baord'), findsOneWidget);
     expect(find.text('Play'), findsOneWidget);
 
-    // 4. Verify Player Timers are displayed
+    // 4. Verify Player Timers are displayed with default 5mn (05:00)
     expect(find.text('05:00'), findsNWidgets(2));
     expect(find.text('16 pieces'), findsNWidgets(2));
+
+    // Return to home
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Player can choose 5mn, 15mn, and 30mn timer before starting match and change mid-game', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Open Pass & Play picker
+    await tester.tap(find.text('Pass & Play (2 Players)'));
+    await tester.pumpAndSettle();
+
+    // 2. Verify 5 mn, 15 mn, 30 mn chips exist
+    expect(find.text('5 mn'), findsOneWidget);
+    expect(find.text('15 mn'), findsOneWidget);
+    expect(find.text('30 mn'), findsOneWidget);
+
+    // 3. Select 15 mn
+    await tester.tap(find.text('15 mn'));
+    await tester.pumpAndSettle();
+
+    // Start match
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // 4. Verify timers start at 15:00
+    expect(find.text('15:00'), findsNWidgets(2));
+
+    // 5. Tap on the Lime timer card to open in-game timer control picker
+    await tester.tap(find.text('15:00').last);
+    await tester.pumpAndSettle();
+
+    // In modal, choose 30 mn option
+    expect(find.text('30 mn (Long)'), findsOneWidget);
+    await tester.tap(find.text('30 mn (Long)'));
+    await tester.pumpAndSettle();
+
+    // 6. Verify timers update to 30:00
+    expect(find.text('30:00'), findsNWidgets(2));
 
     // Return to home
     await tester.tap(find.byIcon(Icons.arrow_back));

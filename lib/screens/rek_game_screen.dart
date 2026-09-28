@@ -25,6 +25,7 @@ class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
   final bool vsAi;
   final AiDifficulty aiDifficulty;
+  final int initialTimeLimitSeconds;
   final SavedGameState? initialSavedState;
 
   const RekGameScreen({
@@ -32,6 +33,7 @@ class RekGameScreen extends StatefulWidget {
     this.startInPlayMode = false,
     this.vsAi = true,
     this.aiDifficulty = AiDifficulty.medium,
+    this.initialTimeLimitSeconds = 300,
     this.initialSavedState,
   });
 
@@ -70,10 +72,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
   bool _isAiThinking = false;
 
   // Match Timer for Players
-  static const int _defaultTimeLimitSeconds = 300; // 5 minutes default
-  int _timeLimitSeconds = _defaultTimeLimitSeconds;
-  int _limeTimeSeconds = _defaultTimeLimitSeconds;
-  int _tealTimeSeconds = _defaultTimeLimitSeconds;
+  late int _timeLimitSeconds;
+  late int _limeTimeSeconds;
+  late int _tealTimeSeconds;
   Timer? _gameTimer;
 
   int get _tealPiecesCount {
@@ -102,6 +103,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
     _isPlaying = widget.startInPlayMode;
     _vsAi = widget.vsAi;
     _ai = RekAi(aiPlayer: PlayerColor.teal, difficulty: widget.aiDifficulty);
+    _timeLimitSeconds = widget.initialTimeLimitSeconds;
+    _limeTimeSeconds = _timeLimitSeconds;
+    _tealTimeSeconds = _timeLimitSeconds;
 
     if (widget.initialSavedState != null) {
       _board = RekRules.cloneBoard(widget.initialSavedState!.board);
@@ -248,9 +252,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 16),
-              _buildTimeControlOption(ctx, 180, lang.timer3Min, '3:00'),
-              _buildTimeControlOption(ctx, 300, lang.timer5Min, '5:00'),
-              _buildTimeControlOption(ctx, 600, lang.timer10Min, '10:00'),
+              _buildTimeControlOption(ctx, 300, lang.timer5Mn, '5 mn'),
+              _buildTimeControlOption(ctx, 900, lang.timer15Mn, '15 mn'),
+              _buildTimeControlOption(ctx, 1800, lang.timer30Mn, '30 mn'),
               _buildTimeControlOption(ctx, 0, lang.timerUnlimited, '∞'),
             ],
           ),

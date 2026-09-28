@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   AiDifficulty _selectedDifficulty = AiDifficulty.medium;
+  int _selectedTimerSeconds = 300;
 
   @override
   void initState() {
@@ -66,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _navigateToGame({
     bool startInPlayMode = false,
     bool vsAi = true,
+    int timeLimitSeconds = 300,
     SavedGameState? initialSavedState,
   }) {
     AudioService.instance.playClick();
@@ -77,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           vsAi: vsAi,
           aiDifficulty: _selectedDifficulty,
           initialSavedState: initialSavedState,
+          initialTimeLimitSeconds: timeLimitSeconds,
         ),
       ),
     );
@@ -108,60 +111,247 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             builder: (context, setModalState) => Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                lang.selectAiDifficulty,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _buildDifficultyOption(
-                setModalState,
-                AiDifficulty.easy,
-                lang.easyDifficulty,
-                lang.easyDifficultyDesc,
-              ),
-              _buildDifficultyOption(
-                setModalState,
-                AiDifficulty.medium,
-                lang.mediumDifficulty,
-                lang.mediumDifficultyDesc,
-              ),
-              _buildDifficultyOption(
-                setModalState,
-                AiDifficulty.hard,
-                lang.hardDifficulty,
-                lang.hardDifficultyDesc,
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              children: [
+                Text(
+                  lang.selectAiDifficulty,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _navigateToGame(startInPlayMode: true, vsAi: true);
+                ),
+                const SizedBox(height: 14),
+                _buildDifficultyOption(
+                  setModalState,
+                  AiDifficulty.easy,
+                  lang.easyDifficulty,
+                  lang.easyDifficultyDesc,
+                ),
+                _buildDifficultyOption(
+                  setModalState,
+                  AiDifficulty.medium,
+                  lang.mediumDifficulty,
+                  lang.mediumDifficultyDesc,
+                ),
+                _buildDifficultyOption(
+                  setModalState,
+                  AiDifficulty.hard,
+                  lang.hardDifficulty,
+                  lang.hardDifficultyDesc,
+                ),
+                const SizedBox(height: 16),
+                _buildTimerSelector(
+                  setModalState,
+                  _selectedTimerSeconds,
+                  (sec) {
+                    setState(() => _selectedTimerSeconds = sec);
                   },
-                  child: Text(
-                    lang.startMatch,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  lang,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _navigateToGame(
+                        startInPlayMode: true,
+                        vsAi: true,
+                        timeLimitSeconds: _selectedTimerSeconds,
+                      );
+                    },
+                    child: Text(
+                      lang.startMatch,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  void _showPassAndPlayPicker() {
+    AudioService.instance.playClick();
+    final lang = LanguageService.instance;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF263238),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: StatefulBuilder(
+            builder: (context, setModalState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4DB6AC).withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.people_outline, color: Color(0xFF4DB6AC), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang.passAndPlayTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            lang.passAndPlaySubtitle,
+                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildTimerSelector(
+                  setModalState,
+                  _selectedTimerSeconds,
+                  (sec) {
+                    setState(() => _selectedTimerSeconds = sec);
+                  },
+                  lang,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00796B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _navigateToGame(
+                        startInPlayMode: true,
+                        vsAi: false,
+                        timeLimitSeconds: _selectedTimerSeconds,
+                      );
+                    },
+                    child: Text(
+                      lang.startMatch,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimerSelector(
+    StateSetter setModalState,
+    int selectedSeconds,
+    ValueChanged<int> onChanged,
+    LanguageService lang,
+  ) {
+    final options = [
+      (300, '5 mn', lang.isKhmer ? 'ស្តង់ដារ' : 'Standard'),
+      (900, '15 mn', lang.isKhmer ? 'មធ្យម' : 'Medium'),
+      (1800, '30 mn', lang.isKhmer ? 'វែង' : 'Long'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.timer_outlined, size: 16, color: Color(0xFFFFD54F)),
+            const SizedBox(width: 6),
+            Text(
+              lang.selectTimer,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: options.map((opt) {
+            final isSelected = selectedSeconds == opt.$1;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  onTap: () {
+                    AudioService.instance.playClick();
+                    setModalState(() => onChanged(opt.$1));
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF2E7D32).withValues(alpha: 0.35)
+                          : const Color(0xFF1E272C),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF81C784) : Colors.white12,
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          opt.$2,
+                          style: TextStyle(
+                            color: isSelected ? const Color(0xFF81C784) : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          opt.$3,
+                          style: TextStyle(
+                            color: isSelected ? Colors.white70 : Colors.white38,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
 
   Widget _buildDifficultyOption(
     StateSetter setModalState,
@@ -403,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     iconColor: const Color(0xFF4DB6AC),
                     title: lang.passAndPlayTitle,
                     subtitle: lang.passAndPlaySubtitle,
-                    onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
+                    onTap: _showPassAndPlayPicker,
                   ),
                   const SizedBox(height: 10),
                   _buildMenuCard(
@@ -508,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               iconColor: const Color(0xFF4DB6AC),
               title: lang.passAndPlayTitle,
               subtitle: lang.passAndPlaySubtitle,
-              onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
+              onTap: _showPassAndPlayPicker,
             ),
 
             const SizedBox(height: 10),
