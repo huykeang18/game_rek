@@ -29,6 +29,20 @@ class UserService extends ChangeNotifier {
   int get wins => _wins;
   bool get isInitialized => _initialized;
 
+  String get rankTitle {
+    if (_points >= 2500) return 'Grandmaster';
+    if (_points >= 1000) return 'Master';
+    if (_points >= 300) return 'Apprentice';
+    return 'Novice';
+  }
+
+  String get rankBadge {
+    if (_points >= 2500) return '👑';
+    if (_points >= 1000) return '🥇';
+    if (_points >= 300) return '🥈';
+    return '🥉';
+  }
+
   /// Available avatar options for selection
   static const List<String> availableAvatars = [
     '👑', // Crown / King

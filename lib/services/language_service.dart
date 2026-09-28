@@ -207,4 +207,24 @@ class LanguageService extends ChangeNotifier {
   String get totalPointsTitle => isKhmer ? 'ពិន្ទុសរុប' : 'Total Score';
   String totalWinsCount(int wins) => isKhmer ? 'ឈ្នះ $wins ប្រកួត' : '$wins wins';
   String get playerStats => isKhmer ? 'ស្ថិតិលេង' : 'Player Stats';
+  String get pointsDialogTitle => isKhmer ? 'ពិន្ទុ និងរង្វាន់' : 'Points & Rewards';
+  String get rankTitle => isKhmer ? 'កម្រិតតំណែង' : 'Player Rank';
+  String rankName(String rank) {
+    if (!isKhmer) return rank;
+    switch (rank) {
+      case 'Grandmaster':
+        return 'កំពូលជើងឯក';
+      case 'Master':
+        return 'ជើងឯក';
+      case 'Apprentice':
+        return 'អ្នកលេងស្ទាត់';
+      default:
+        return 'អ្នកចាប់ផ្តើម';
+    }
+  }
+  String get howToEarnPointsTitle => isKhmer ? 'របៀបរកពិន្ទុ' : 'How to Earn Points';
+  String get winVsAiEasy => isKhmer ? 'ឈ្នះ AI កម្រិតងាយ: +50 ពិន្ទុ' : 'Win vs AI (Easy): +50 pts';
+  String get winVsAiMedium => isKhmer ? 'ឈ្នះ AI កម្រិតមធ្យម: +100 ពិន្ទុ' : 'Win vs AI (Medium): +100 pts';
+  String get winVsAiHard => isKhmer ? 'ឈ្នះ AI កម្រិតពិបាក: +200 ពិន្ទុ' : 'Win vs AI (Hard): +200 pts';
+  String get winPassAndPlay => isKhmer ? 'ឈ្នះ Pass & Play: +100 ពិន្ទុ' : 'Win Pass & Play: +100 pts';
 }

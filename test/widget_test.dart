@@ -453,12 +453,24 @@ void main() {
     await tester.tap(find.text(UserService.instance.username));
     await tester.pumpAndSettle();
 
-    // 3. Verify Points & Stats banner is shown in profile dialog
-    expect(find.text('100 pts'), findsOneWidget);
-    expect(find.text('1 wins'), findsOneWidget);
+    // Verify Profile dialog opens cleanly (independent username editing)
+    expect(find.text('Edit Player Profile'), findsOneWidget);
 
     // Close profile dialog
     await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    // 3. Open dedicated Points Dialog using points button
+    await tester.tap(find.text('100'));
+    await tester.pumpAndSettle();
+
+    // Verify Points & Rewards dialog is shown independently
+    expect(find.text('Points & Rewards'), findsOneWidget);
+    expect(find.text('Total Score'), findsOneWidget);
+    expect(find.text('1 wins'), findsOneWidget);
+
+    // Close points dialog
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
   });
 }

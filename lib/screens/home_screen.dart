@@ -8,6 +8,7 @@ import '../services/user_service.dart';
 import '../services/language_service.dart';
 import '../widgets/piece_token_widget.dart';
 import '../widgets/profile_edit_dialog.dart';
+import '../widgets/points_dialog.dart';
 import '../widgets/rules_dialog.dart';
 import '../widgets/settings_dialog.dart';
 import '../widgets/language_button.dart';
@@ -61,6 +62,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     showDialog(
       context: context,
       builder: (_) => const ProfileEditDialog(),
+    );
+  }
+
+  void _openPointsDialog() {
+    AudioService.instance.playClick();
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (_) => const PointsDialog(),
     );
   }
 
@@ -427,69 +437,91 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildTopBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF141C20).withValues(alpha: 0.6),
+        color: const Color(0xFF141C20).withValues(alpha: 0.7),
         border: const Border(bottom: BorderSide(color: Colors.white10)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Separated: 1) Username Button and 2) Points Button
+          // 1) USERNAME BUTTON (Left side - dedicated player profile button)
           Flexible(
             child: ListenableBuilder(
               listenable: UserService.instance,
               builder: (context, _) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Button 1: Username & Avatar
-                    Flexible(
-                      child: InkWell(
-                        onTap: _openProfile,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF263238).withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.45)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(UserService.instance.avatar, style: const TextStyle(fontSize: 14)),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  UserService.instance.username,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _openProfile,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF263238).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                          width: 1.2,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(UserService.instance.avatar, style: const TextStyle(fontSize: 14)),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              UserService.instance.username,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                );
+              },
+            ),
+          ),
 
-                    const SizedBox(width: 5),
+          const SizedBox(width: 6),
 
-                    // Button 2: Separate Points Button
-                    InkWell(
-                      onTap: _openProfile,
-                      borderRadius: BorderRadius.circular(20),
+          // 2) RIGHT SIDE: POINTS BUTTON & QUICK CONTROLS
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Dedicated Points Button
+              ListenableBuilder(
+                listenable: UserService.instance,
+                builder: (context, _) {
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _openPointsDialog,
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4.5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B3B2B).withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.6)),
+                          color: const Color(0xFF1B3B2B).withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFFFD54F).withValues(alpha: 0.6),
+                            width: 1.2,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
@@ -501,13 +533,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star, size: 11, color: Color(0xFFFFD54F)),
-                            const SizedBox(width: 2.5),
+                            const Icon(Icons.star, size: 13, color: Color(0xFFFFD54F)),
+                            const SizedBox(width: 3),
                             Text(
                               '${UserService.instance.points}',
                               style: const TextStyle(
                                 color: Color(0xFFFFD54F),
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -515,20 +547,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ),
+                  );
+                },
+              ),
 
-          const SizedBox(width: 6),
+              const SizedBox(width: 4),
 
-          // Settings, Music & Language quick controls
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
               // Language Switcher button
-              const LanguageToggleButton(),
+              const LanguageToggleButton(isCompact: true),
               const SizedBox(width: 2),
 
               // Music toggle button
