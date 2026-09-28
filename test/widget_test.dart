@@ -5,8 +5,13 @@ import 'package:game_rek/logic/rek_rules.dart';
 import 'package:game_rek/models/rek_piece.dart';
 import 'package:game_rek/services/user_service.dart';
 import 'package:game_rek/services/language_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('Rek app home page and navigation to game editor test', (WidgetTester tester) async {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
@@ -253,5 +258,41 @@ void main() {
     expect(LanguageService.instance.isEnglish, isTrue);
     expect(find.text('EN'), findsOneWidget);
     expect(find.text('Play vs AI'), findsOneWidget);
+  });
+
+  testWidgets('Rules & Guide details display in Khmer when language is Khmer', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Set to Khmer
+    await LanguageService.instance.setLanguage(AppLanguage.khmer);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // Tap Rules & Guide card in Khmer: "ច្បាប់លេង និងការណែនាំ"
+    await tester.tap(find.text('ច្បាប់លេង និងការណែនាំ'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog header in Khmer
+    expect(find.text('ល្បែងរែក (Cambodian Rek)'), findsOneWidget);
+    expect(find.text('ច្បាប់លេង & ការណែនាំ'), findsOneWidget);
+    expect(find.text('កំណត់ត្រាក្បាច់ដើរ'), findsOneWidget);
+
+    // Verify detailed section titles in Khmer
+    expect(find.text('១. ក្តារអុក & គោលដៅនៃការលេង'), findsOneWidget);
+    expect(find.text('២. របៀបដើរកូនអុក (ដើរដូចទូកក្នុងអុក)'), findsOneWidget);
+    expect(find.text('៣. ក្បាច់ស៊ីរែក (The "Rek" Shoulder-Pole Capture)'), findsOneWidget);
+    expect(find.text('៤. ក្បាច់ព័ទ្ធស៊ី (ខាត់)'), findsOneWidget);
+    expect(find.text('៥. ផ្ទាំងបញ្ជា និងឧបករណ៍រៀបចំក្តារ'), findsOneWidget);
+
+    // Switch to English dynamically and verify update
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+    await tester.pumpAndSettle();
+
+    expect(find.text('1. Board & Objective'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Rules & Guide'), findsOneWidget);
   });
 }
