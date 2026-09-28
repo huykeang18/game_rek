@@ -619,5 +619,42 @@ void main() {
     );
     expect(logoFinder, findsOneWidget);
   });
+
+  testWidgets('Tapping hero board emblem opens Interactive Board Dialog with playable WoodBoard', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // Verify touch badge icon exists on the emblem
+    expect(find.byIcon(Icons.touch_app), findsOneWidget);
+
+    // Tap the hero board emblem
+    await tester.tap(find.byType(Image).first);
+    await tester.pumpAndSettle();
+
+    // Verify Interactive Board Dialog opened
+    expect(find.text('Interactive Rek Board'), findsOneWidget);
+    expect(find.text('Lime Turn'), findsOneWidget);
+    expect(find.text('Rotate Baord'), findsOneWidget);
+    expect(find.text('Start Match'), findsOneWidget);
+
+    // Tap Rotate Baord
+    await tester.tap(find.text('Rotate Baord'));
+    await tester.pumpAndSettle();
+
+    // Close the interactive dialog
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    // Back on HomeScreen
+    expect(find.text('GAME REK'), findsOneWidget);
+  });
 }
+
 

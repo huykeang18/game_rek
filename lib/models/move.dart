@@ -19,6 +19,7 @@ class RekMove {
 
   int get totalCaptures => rekCaptures.length + surroundCaptures.length;
   bool get hasCapture => totalCaptures > 0;
+  List<BoardPosition> get allCaptures => [...rekCaptures, ...surroundCaptures];
 
   String get description {
     final capText = hasCapture

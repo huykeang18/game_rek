@@ -234,4 +234,10 @@ class LanguageService extends ChangeNotifier {
   String get winVsAiMedium => isKhmer ? 'ឈ្នះ AI កម្រិតមធ្យម: +100 ពិន្ទុ' : 'Win vs AI (Medium): +100 pts';
   String get winVsAiHard => isKhmer ? 'ឈ្នះ AI កម្រិតពិបាក: +200 ពិន្ទុ' : 'Win vs AI (Hard): +200 pts';
   String get winPassAndPlay => isKhmer ? 'ឈ្នះ Pass & Play: +100 ពិន្ទុ' : 'Win Pass & Play: +100 pts';
+
+  // Interactive Board Modal
+  String get interactiveBoardTitle => isKhmer ? 'ក្ដារល្បែងរែកអន្តរកម្ម' : 'Interactive Rek Board';
+  String get interactiveBoardSubtitle => isKhmer ? 'ចុចលើកូនអុកដើម្បីសាកល្បងដើរ និងស៊ីរែក' : 'Tap pieces to test moves & Rek captures';
+  String get tapToInteractHint => isKhmer ? 'ចុចដើម្បីលេង' : 'Tap to interact';
 }
+

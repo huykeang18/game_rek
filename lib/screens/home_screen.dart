@@ -12,6 +12,7 @@ import '../widgets/points_dialog.dart';
 import '../widgets/rules_dialog.dart';
 import '../widgets/settings_dialog.dart';
 import '../widgets/language_button.dart';
+import '../widgets/interactive_board_dialog.dart';
 import 'rek_game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -71,6 +72,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     showDialog(
       context: context,
       builder: (_) => const PointsDialog(),
+    );
+  }
+
+  void _openInteractiveBoardDialog() {
+    AudioService.instance.playClick();
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (_) => InteractiveBoardDialog(
+        onStartMatch: () => _navigateToGame(
+          startInPlayMode: true,
+          vsAi: true,
+          timeLimitSeconds: _selectedTimerSeconds,
+        ),
+      ),
     );
   }
 
@@ -840,71 +856,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildHeroEmblem() {
-    return Container(
-      width: 108,
-      height: 108,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD4AF37),
-          width: 3.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
-            blurRadius: 16,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
-        child: Image.asset(
-          'assets/images/logo.png',
-          width: 108,
-          height: 108,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Center(
-            child: SizedBox(
-              width: 74,
-              height: 74,
-              child: Stack(
-                alignment: Alignment.center,
-                children: const [
-                  Positioned(
-                    bottom: 6,
-                    right: 6,
-                    child: PieceTokenWidget(
-                      player: PlayerColor.lime,
-                      type: PieceType.crowned,
-                      size: 40,
-                      isSelected: true,
-                    ),
-                  ),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: PieceTokenWidget(
-                      player: PlayerColor.teal,
-                      type: PieceType.crowned,
-                      size: 40,
-                      isSelected: false,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return _InteractiveHeroBoardEmblem(
+      onTap: _openInteractiveBoardDialog,
     );
   }
+
 
   Widget _buildMenuCard({
     required IconData icon,
@@ -994,3 +950,147 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 }
+
+class _InteractiveHeroBoardEmblem extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _InteractiveHeroBoardEmblem({required this.onTap});
+
+  @override
+  State<_InteractiveHeroBoardEmblem> createState() => _InteractiveHeroBoardEmblemState();
+}
+
+class _InteractiveHeroBoardEmblemState extends State<_InteractiveHeroBoardEmblem> {
+  bool _isPressed = false;
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = LanguageService.instance;
+    final scale = _isPressed ? 0.92 : (_isHovered ? 1.05 : 1.0);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: scale,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutBack,
+          child: Tooltip(
+            message: lang.tapToInteractHint,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _isHovered || _isPressed
+                          ? const Color(0xFFFFE082)
+                          : const Color(0xFFD4AF37),
+                      width: 3.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFD4AF37).withValues(
+                          alpha: _isHovered || _isPressed ? 0.55 : 0.35,
+                        ),
+                        blurRadius: _isHovered || _isPressed ? 20 : 16,
+                        spreadRadius: _isHovered || _isPressed ? 2 : 1,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(13),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: SizedBox(
+                          width: 74,
+                          height: 74,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: const [
+                              Positioned(
+                                bottom: 6,
+                                right: 6,
+                                child: PieceTokenWidget(
+                                  player: PlayerColor.lime,
+                                  type: PieceType.crowned,
+                                  size: 40,
+                                  isSelected: true,
+                                ),
+                              ),
+                              Positioned(
+                                top: 6,
+                                left: 6,
+                                child: PieceTokenWidget(
+                                  player: PlayerColor.teal,
+                                  type: PieceType.crowned,
+                                  size: 40,
+                                  isSelected: false,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Interactive touch badge in top-right corner
+                Positioned(
+                  top: -6,
+                  right: -6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F1A24),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFFD54F),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.touch_app,
+                      color: Color(0xFFFFD54F),
+                      size: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
