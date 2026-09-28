@@ -81,6 +81,10 @@ class _RekGameScreenState extends State<RekGameScreen> {
     } else {
       _board = RekRules.createInitialBoard();
     }
+
+    if (_isPlaying) {
+      AudioService.instance.playGameStart();
+    }
   }
 
   void _resetBoardToStandard() {
@@ -226,6 +230,10 @@ class _RekGameScreenState extends State<RekGameScreen> {
         _gameOverResult = RekRules.checkGameOver(_board, _currentTurn);
       }
     });
+
+    if (_isPlaying) {
+      AudioService.instance.playGameStart();
+    }
 
     if (_isPlaying && _vsAi && _currentTurn == _ai.aiPlayer && _gameOverResult == null) {
       _triggerAiMove();

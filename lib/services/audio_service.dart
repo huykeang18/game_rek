@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MusicTrack {
@@ -74,6 +76,10 @@ class AudioService extends ChangeNotifier {
   final AudioPlayer _bgmPlayer = AudioPlayer(playerId: 'bgm_player');
   final AudioPlayer _sfxPlayer = AudioPlayer(playerId: 'sfx_player');
 
+  static final Map<String, String> _macAssetPaths = {};
+  Process? _macBgmProcess;
+  bool _macBgmLoopRunning = false;
+
   bool _bgmEnabled = true;
   double _bgmVolume = 0.6;
   String _currentTrackKey = 'roneat';
@@ -109,6 +115,10 @@ class AudioService extends ChangeNotifier {
       _sfxEnabled = prefs.getBool(_keySfxEnabled) ?? true;
       _sfxVolume = prefs.getDouble(_keySfxVolume) ?? 0.8;
 
+      if (!kIsWeb && Platform.isMacOS) {
+        await _prepareMacAssets();
+      }
+
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmEnabled ? _bgmVolume : 0.0);
       await _sfxPlayer.setPlayerMode(PlayerMode.lowLatency);
@@ -127,9 +137,83 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  Future<void> _startBgm() async {
+  Future<void> _prepareMacAssets() async {
     try {
-      final track = currentTrack;
+      final tempDir = Directory('${Directory.systemTemp.path}/game_rek_audio');
+      if (!tempDir.existsSync()) {
+        tempDir.createSync(recursive: true);
+      }
+      for (final track in availableTracks) {
+        await _extractMacAsset(track.assetPath, tempDir);
+      }
+      const sfxList = [
+        'audio/move.wav',
+        'audio/select.wav',
+        'audio/place.wav',
+        'audio/capture.wav',
+        'audio/trap.wav',
+        'audio/invalid.wav',
+        'audio/rotate.wav',
+        'audio/erase.wav',
+        'audio/clear.wav',
+        'audio/ai_move.wav',
+        'audio/win.wav',
+        'audio/defeat.wav',
+        'audio/click.wav',
+      ];
+      for (final sfx in sfxList) {
+        await _extractMacAsset(sfx, tempDir);
+      }
+    } catch (e) {
+      debugPrint('Error preparing mac audio assets: $e');
+    }
+  }
+
+  Future<void> _extractMacAsset(String assetPath, Directory tempDir) async {
+    final fileName = assetPath.split('/').last;
+    final targetFile = File('${tempDir.path}/$fileName');
+    if (targetFile.existsSync() && targetFile.lengthSync() > 0) {
+      _macAssetPaths[assetPath] = targetFile.path;
+      return;
+    }
+    final localFile = File('assets/$assetPath');
+    if (localFile.existsSync() && localFile.lengthSync() > 0) {
+      _macAssetPaths[assetPath] = localFile.absolute.path;
+      return;
+    }
+    try {
+      final data = await rootBundle.load('assets/$assetPath');
+      await targetFile.writeAsBytes(data.buffer.asUint8List());
+      _macAssetPaths[assetPath] = targetFile.path;
+    } catch (e) {
+      debugPrint('Failed to extract mac asset ($assetPath): $e');
+    }
+  }
+
+  Future<void> _startBgm() async {
+    _macBgmLoopRunning = false;
+    _macBgmProcess?.kill();
+
+    if (!_bgmEnabled) {
+      _isPlayingBgm = false;
+      notifyListeners();
+      return;
+    }
+
+    final track = currentTrack;
+
+    if (!kIsWeb && Platform.isMacOS) {
+      final path = _macAssetPaths[track.assetPath] ?? 'assets/${track.assetPath}';
+      if (File(path).existsSync()) {
+        _macBgmLoopRunning = true;
+        _isPlayingBgm = true;
+        notifyListeners();
+        _runMacBgmLoop(path);
+        return;
+      }
+    }
+
+    try {
       await _bgmPlayer.stop();
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmVolume);
@@ -139,6 +223,20 @@ class AudioService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to start BGM: $e');
       _isPlayingBgm = false;
+    }
+  }
+
+  void _runMacBgmLoop(String path) async {
+    while (_macBgmLoopRunning && _bgmEnabled) {
+      try {
+        _macBgmProcess = await Process.start('/usr/bin/afplay', ['-v', _bgmVolume.toString(), path]);
+        await _macBgmProcess!.exitCode;
+        if (!_macBgmLoopRunning || !_bgmEnabled) break;
+        await Future.delayed(const Duration(milliseconds: 150));
+      } catch (e) {
+        debugPrint('Mac BGM loop error: $e');
+        break;
+      }
     }
   }
 
@@ -233,8 +331,21 @@ class AudioService extends ChangeNotifier {
 
   void _playSfx(String assetPath, {double volumeMultiplier = 1.0}) {
     if (!_sfxEnabled) return;
+    final vol = (_sfxVolume * volumeMultiplier).clamp(0.0, 1.0);
+
+    // On macOS, native afplay guarantees instant, zero-latency playback
+    if (!kIsWeb && Platform.isMacOS) {
+      final path = _macAssetPaths[assetPath] ?? 'assets/$assetPath';
+      if (File(path).existsSync()) {
+        Process.start('/usr/bin/afplay', ['-v', vol.toString(), path]).catchError((e) {
+          debugPrint('afplay error ($assetPath): $e');
+          return null as dynamic;
+        });
+        return;
+      }
+    }
+
     try {
-      final vol = (_sfxVolume * volumeMultiplier).clamp(0.0, 1.0);
       _sfxPlayer.stop().then((_) {
         _sfxPlayer.setVolume(vol).then((_) {
           _sfxPlayer.play(AssetSource(assetPath));
@@ -248,6 +359,9 @@ class AudioService extends ChangeNotifier {
       debugPrint('Error playing SFX ($assetPath): $e');
     }
   }
+
+  /// Play game start flourish chime
+  void playGameStart() => _playSfx('audio/clear.wav', volumeMultiplier: 0.95);
 
   /// Play wooden piece move clack
   void playMove() => _playSfx('audio/move.wav');
@@ -290,6 +404,8 @@ class AudioService extends ChangeNotifier {
 
   /// Pause BGM temporarily (e.g. app lifecycle background)
   Future<void> pauseBgm() async {
+    _macBgmLoopRunning = false;
+    _macBgmProcess?.kill();
     try {
       if (_isPlayingBgm) {
         await _bgmPlayer.pause();
@@ -305,9 +421,7 @@ class AudioService extends ChangeNotifier {
   Future<void> resumeBgm() async {
     try {
       if (_bgmEnabled && !_isPlayingBgm) {
-        await _bgmPlayer.resume();
-        _isPlayingBgm = true;
-        notifyListeners();
+        await _startBgm();
       }
     } catch (e) {
       debugPrint('Error resuming BGM: $e');
@@ -316,6 +430,8 @@ class AudioService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _macBgmLoopRunning = false;
+    _macBgmProcess?.kill();
     _bgmPlayer.dispose();
     _sfxPlayer.dispose();
     super.dispose();
