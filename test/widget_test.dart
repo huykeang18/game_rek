@@ -631,8 +631,8 @@ void main() {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
 
-    // Verify touch badge icon exists on the emblem
-    expect(find.byIcon(Icons.touch_app), findsOneWidget);
+    // Verify touch hand point icon is deleted/not present on the emblem
+    expect(find.byIcon(Icons.touch_app), findsNothing);
 
     // Tap the hero board emblem
     await tester.tap(find.byType(Image).first);

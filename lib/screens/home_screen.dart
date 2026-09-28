@@ -985,107 +985,73 @@ class _InteractiveHeroBoardEmblemState extends State<_InteractiveHeroBoardEmblem
           curve: Curves.easeOutBack,
           child: Tooltip(
             message: lang.tapToInteractHint,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isHovered || _isPressed
+                      ? const Color(0xFFFFE082)
+                      : const Color(0xFFD4AF37),
+                  width: 3.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFD4AF37).withValues(
+                      alpha: _isHovered || _isPressed ? 0.55 : 0.35,
+                    ),
+                    blurRadius: _isHovered || _isPressed ? 20 : 16,
+                    spreadRadius: _isHovered || _isPressed ? 2 : 1,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: Image.asset(
+                  'assets/images/logo.png',
                   width: 110,
                   height: 110,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _isHovered || _isPressed
-                          ? const Color(0xFFFFE082)
-                          : const Color(0xFFD4AF37),
-                      width: 3.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFD4AF37).withValues(
-                          alpha: _isHovered || _isPressed ? 0.55 : 0.35,
-                        ),
-                        blurRadius: _isHovered || _isPressed ? 20 : 16,
-                        spreadRadius: _isHovered || _isPressed ? 2 : 1,
-                        offset: const Offset(0, 4),
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(13),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 110,
-                      height: 110,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: SizedBox(
-                          width: 74,
-                          height: 74,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: const [
-                              Positioned(
-                                bottom: 6,
-                                right: 6,
-                                child: PieceTokenWidget(
-                                  player: PlayerColor.lime,
-                                  type: PieceType.crowned,
-                                  size: 40,
-                                  isSelected: true,
-                                ),
-                              ),
-                              Positioned(
-                                top: 6,
-                                left: 6,
-                                child: PieceTokenWidget(
-                                  player: PlayerColor.teal,
-                                  type: PieceType.crowned,
-                                  size: 40,
-                                  isSelected: false,
-                                ),
-                              ),
-                            ],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Center(
+                    child: SizedBox(
+                      width: 74,
+                      height: 74,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: const [
+                          Positioned(
+                            bottom: 6,
+                            right: 6,
+                            child: PieceTokenWidget(
+                              player: PlayerColor.lime,
+                              type: PieceType.crowned,
+                              size: 40,
+                              isSelected: true,
+                            ),
                           ),
-                        ),
+                          Positioned(
+                            top: 6,
+                            left: 6,
+                            child: PieceTokenWidget(
+                              player: PlayerColor.teal,
+                              type: PieceType.crowned,
+                              size: 40,
+                              isSelected: false,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-
-                // Interactive touch badge in top-right corner
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F1A24),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFFFD54F),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.touch_app,
-                      color: Color(0xFFFFD54F),
-                      size: 15,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
