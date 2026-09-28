@@ -198,24 +198,149 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           opacity: _fadeAnimation,
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 680;
               return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                    maxWidth: 480,
+                child: Center(
+                  child: isWide
+                      ? _buildWideLayout(constraints)
+                      : _buildCompactLayout(constraints),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWideLayout(BoxConstraints constraints) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: constraints.maxHeight,
+        maxWidth: 860,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Left Hero Section
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildHeroEmblem(),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'ល្បែងរែក',
+                    style: TextStyle(
+                      color: Color(0xFFFFD54F),
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                    ),
                   ),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 10),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'CAMBODIAN REK CHESS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Traditional Khmer Board Game & Board Editor',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Traditional Cambodian Cultural Game\n8×8 Rook Moves & Shoulder-Pole Captures',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white30, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
 
-                          // Top Emblem & Logo
-                          _buildHeroEmblem(),
+            const SizedBox(width: 32),
 
-                          const SizedBox(height: 16),
+            // Right Action Menu Cards
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildMenuCard(
+                    icon: Icons.smart_toy_outlined,
+                    iconColor: const Color(0xFF81C784),
+                    title: 'Play vs AI',
+                    subtitle: 'Single player vs Computer (${_selectedDifficulty.name.toUpperCase()})',
+                    onTap: _showAiDifficultyPicker,
+                    primary: true,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildMenuCard(
+                    icon: Icons.people_outline,
+                    iconColor: const Color(0xFF4DB6AC),
+                    title: 'Pass & Play (2 Players)',
+                    subtitle: 'Play locally against a friend on one device',
+                    onTap: () => _navigateToGame(startInPlayMode: true, vsAi: false),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildMenuCard(
+                    icon: Icons.dashboard_customize_outlined,
+                    iconColor: const Color(0xFFFFD54F),
+                    title: 'Board Setup & Editor',
+                    subtitle: 'Custom setup with Erase, Rotate Baord & Selectors',
+                    onTap: () => _navigateToGame(startInPlayMode: false, vsAi: true),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSecondaryCard(
+                          icon: Icons.folder_open_outlined,
+                          title: 'Load Game',
+                          onTap: _showLoadDialog,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _buildSecondaryCard(
+                          icon: Icons.menu_book_outlined,
+                          title: 'Rules & Guide',
+                          onTap: _showRules,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactLayout(BoxConstraints constraints) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: constraints.maxHeight,
+        maxWidth: 480,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 10),
+            _buildHeroEmblem(),
+            const SizedBox(height: 16),
 
                           // Khmer Title
                           const Text(
@@ -330,14 +455,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ],
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
+                  );
   }
 
   Widget _buildHeroEmblem() {

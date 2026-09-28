@@ -21,87 +21,97 @@ class BottomMenuBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Yellow back arrow in the bottom left corner
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onBack,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.arrow_back,
-                  color: Color(0xFFFFD54F), // Yellow back arrow
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-
-          // Center Buttons: "Save", "Load Game", "Play"
-          Row(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildBottomButton(
-                label: 'Save',
-                onTap: onSave,
-                backgroundColor: const Color(0xFF37474F),
+              // Yellow back arrow in the bottom left corner
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onBack,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFFFFD54F),
+                      size: 22,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-              _buildBottomButton(
-                label: 'Load Game',
-                onTap: onLoadGame,
-                backgroundColor: const Color(0xFF37474F),
+
+              const SizedBox(width: 14),
+
+              // Center Buttons: "Save", "Load Game", "Play"
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBottomButton(
+                    label: 'Save',
+                    onTap: onSave,
+                    backgroundColor: const Color(0xFF37474F),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildBottomButton(
+                    label: 'Load Game',
+                    onTap: onLoadGame,
+                    backgroundColor: const Color(0xFF37474F),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildBottomButton(
+                    label: isPlaying ? 'Edit Board' : 'Play',
+                    onTap: onPlay,
+                    backgroundColor: isPlaying
+                        ? const Color(0xFFE65100)
+                        : const Color(0xFF2E7D32),
+                    highlight: true,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              _buildBottomButton(
-                label: isPlaying ? 'Edit Board' : 'Play',
-                onTap: onPlay,
-                backgroundColor: isPlaying
-                    ? const Color(0xFFE65100)
-                    : const Color(0xFF2E7D32),
-                highlight: true,
+
+              const SizedBox(width: 14),
+
+              // White chat bubble icon in the bottom right corner
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onChat,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-
-          // White chat bubble icon in the bottom right corner
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onChat,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.chat_bubble,
-                  color: Colors.white, // White chat bubble icon
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -118,7 +128,7 @@ class BottomMenuBar extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: backgroundColor.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(6),
@@ -140,7 +150,7 @@ class BottomMenuBar extends StatelessWidget {
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
             ),

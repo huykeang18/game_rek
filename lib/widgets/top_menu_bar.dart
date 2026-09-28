@@ -19,41 +19,48 @@ class TopMenuBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
-        children: [
-          // Green Wi-Fi connection icon in the top left corner
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.wifi,
-              color: isWifiConnected ? const Color(0xFF00E676) : Colors.grey,
-              size: 24,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Green Wi-Fi connection icon in the top left corner
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.wifi,
+                  color: isWifiConnected ? const Color(0xFF00E676) : Colors.grey,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              // Action Buttons: "Erase all", "Erase", "Rotate Baord"
+              _buildMenuButton(
+                label: 'Erase all',
+                onTap: onEraseAll,
+                isDestructive: true,
+              ),
+              const SizedBox(width: 8),
+              _buildMenuButton(
+                label: 'Erase',
+                onTap: onToggleErase,
+                isActive: isEraserActive,
+              ),
+              const SizedBox(width: 8),
+              _buildMenuButton(
+                label: 'Rotate Baord',
+                onTap: onRotateBoard,
+              ),
+            ],
           ),
-          const Spacer(),
-          // Action Buttons: "Erase all", "Erase", "Rotate Baord"
-          _buildMenuButton(
-            label: 'Erase all',
-            onTap: onEraseAll,
-            isDestructive: true,
-          ),
-          const SizedBox(width: 8),
-          _buildMenuButton(
-            label: 'Erase',
-            onTap: onToggleErase,
-            isActive: isEraserActive,
-          ),
-          const SizedBox(width: 8),
-          _buildMenuButton(
-            label: 'Rotate Baord',
-            onTap: onRotateBoard,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -71,7 +78,7 @@ class TopMenuBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: isActive
                 ? const Color(0xFFE57373)
@@ -97,7 +104,7 @@ class TopMenuBar extends StatelessWidget {
               color: isDestructive && !isActive
                   ? const Color(0xFFFFCDD2)
                   : Colors.white,
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
             ),

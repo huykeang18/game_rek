@@ -8,14 +8,18 @@ class RulesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final dialogWidth = screenSize.width * 0.92 > 480 ? 480.0 : screenSize.width * 0.92;
+    final dialogHeight = screenSize.height * 0.88 > 540 ? 540.0 : screenSize.height * 0.88;
+
     return DefaultTabController(
       length: 2,
       child: Dialog(
         backgroundColor: const Color(0xFF263238),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          width: 440,
-          height: 520,
+          width: dialogWidth,
+          height: dialogHeight,
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [

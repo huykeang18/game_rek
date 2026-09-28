@@ -474,74 +474,348 @@ class _RekGameScreenState extends State<RekGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E272C), // Sleek felt/dark background
+      backgroundColor: const Color(0xFF1E272C),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top Menu: Green Wi-Fi, Erase all, Erase, Rotate Baord
-            TopMenuBar(
-              onEraseAll: _onEraseAll,
-              onToggleErase: _onToggleErase,
-              isEraserActive: _isEraserActive,
-              onRotateBoard: _onRotateBoard,
-              isWifiConnected: true,
-            ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isLandscape = constraints.maxWidth > constraints.maxHeight * 1.15;
+            if (isLandscape) {
+              return _buildLandscapeLayout(context, constraints);
+            } else {
+              return _buildPortraitLayout(context, constraints);
+            }
+          },
+        ),
+      ),
+    );
+  }
 
-            // Top Piece Selectors: Teal Plain & Crown
-            PieceSelectorBar(
-              player: PlayerColor.teal,
-              selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
-                  ? _selectedPieceType
-                  : null,
-              isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
-              onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
-            ),
+  Widget _buildPortraitLayout(BuildContext context, BoxConstraints constraints) {
+    final screenHeight = constraints.maxHeight;
+    final isCompactHeight = screenHeight < 680;
+    final tokenSize = isCompactHeight ? 34.0 : 40.0;
 
-            // Active Game Status / Banner
-            GameStatusBanner(
-              currentTurn: _currentTurn,
-              isPlayMode: _isPlaying,
-              lastNotification: _lastNotification,
-              gameOverResult: _gameOverResult,
-              onReset: _resetBoardToStandard,
-              onEdit: () => setState(() => _isPlaying = false),
-            ),
+    return Column(
+      children: [
+        // Top Menu: Green Wi-Fi, Erase all, Erase, Rotate Baord
+        TopMenuBar(
+          onEraseAll: _onEraseAll,
+          onToggleErase: _onToggleErase,
+          isEraserActive: _isEraserActive,
+          onRotateBoard: _onRotateBoard,
+          isWifiConnected: true,
+        ),
 
-            // Main 8x8 Wood Board
-            Expanded(
-              child: Center(
-                child: WoodBoard(
-                  board: _board,
-                  isRotated: _isRotated,
-                  selectedSquare: _selectedSquare,
-                  legalMoves: _legalMoves,
-                  lastMoveFromTo: _lastMoveFromTo,
-                  recentCaptures: _recentCaptures,
-                  onSquareTap: _onSquareTap,
-                ),
+        // Top Piece Selectors: Teal Plain & Crown
+        PieceSelectorBar(
+          player: PlayerColor.teal,
+          selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
+              ? _selectedPieceType
+              : null,
+          isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
+          onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
+          tokenSize: tokenSize,
+        ),
+
+        // Active Game Status / Banner
+        GameStatusBanner(
+          currentTurn: _currentTurn,
+          isPlayMode: _isPlaying,
+          lastNotification: _lastNotification,
+          gameOverResult: _gameOverResult,
+          onReset: _resetBoardToStandard,
+          onEdit: () => setState(() => _isPlaying = false),
+        ),
+
+        // Main 8x8 Wood Board (constrained to never overflow on tablets or desktop)
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520, maxHeight: 520),
+              child: WoodBoard(
+                board: _board,
+                isRotated: _isRotated,
+                selectedSquare: _selectedSquare,
+                legalMoves: _legalMoves,
+                lastMoveFromTo: _lastMoveFromTo,
+                recentCaptures: _recentCaptures,
+                onSquareTap: _onSquareTap,
               ),
             ),
+          ),
+        ),
 
-            // Bottom Piece Selectors: Lime Green Plain & Crown (Plain highlighted by default!)
-            PieceSelectorBar(
-              player: PlayerColor.lime,
-              selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
-                  ? _selectedPieceType
-                  : null,
-              isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
-              onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
-            ),
+        // Bottom Piece Selectors: Lime Green Plain & Crown (Plain highlighted by default!)
+        PieceSelectorBar(
+          player: PlayerColor.lime,
+          selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
+              ? _selectedPieceType
+              : null,
+          isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
+          onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
+          tokenSize: tokenSize,
+        ),
 
-            // Bottom Menu: Yellow Back Arrow, Save, Load Game, Play, White Chat Bubble
-            BottomMenuBar(
-              onBack: _onBack,
-              onSave: _onSave,
-              onLoadGame: _onLoadGame,
-              onPlay: _onPlay,
-              onChat: _onChat,
-              isPlaying: _isPlaying,
+        // Bottom Menu: Yellow Back Arrow, Save, Load Game, Play, White Chat Bubble
+        BottomMenuBar(
+          onBack: _onBack,
+          onSave: _onSave,
+          onLoadGame: _onLoadGame,
+          onPlay: _onPlay,
+          onChat: _onChat,
+          isPlaying: _isPlaying,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout(BuildContext context, BoxConstraints constraints) {
+    return Column(
+      children: [
+        // Unified Header for Landscape Mode
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.25),
+            border: const Border(bottom: BorderSide(color: Colors.white12)),
+          ),
+          child: Row(
+            children: [
+              // Yellow back arrow
+              InkWell(
+                onTap: _onBack,
+                borderRadius: BorderRadius.circular(16),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.arrow_back, color: Color(0xFFFFD54F), size: 22),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Green Wi-Fi icon
+              const Icon(Icons.wifi, color: Color(0xFF00E676), size: 20),
+              const SizedBox(width: 10),
+              // Status banner in landscape top bar
+              Expanded(
+                child: GameStatusBanner(
+                  currentTurn: _currentTurn,
+                  isPlayMode: _isPlaying,
+                  lastNotification: _lastNotification,
+                  gameOverResult: _gameOverResult,
+                  onReset: _resetBoardToStandard,
+                  onEdit: () => setState(() => _isPlaying = false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Menu Actions
+              _buildCompactBtn('Erase all', _onEraseAll, isDestructive: true),
+              const SizedBox(width: 6),
+              _buildCompactBtn('Erase', _onToggleErase, isActive: _isEraserActive),
+              const SizedBox(width: 6),
+              _buildCompactBtn('Rotate Baord', _onRotateBoard),
+              const SizedBox(width: 6),
+              _buildCompactBtn('Save', _onSave),
+              const SizedBox(width: 6),
+              _buildCompactBtn('Load Game', _onLoadGame),
+              const SizedBox(width: 6),
+              _buildCompactBtn(
+                _isPlaying ? 'Edit Board' : 'Play',
+                _onPlay,
+                highlight: true,
+                backgroundColor: _isPlaying ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+              ),
+              const SizedBox(width: 8),
+              // White Chat Bubble
+              InkWell(
+                onTap: _onChat,
+                borderRadius: BorderRadius.circular(16),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.chat_bubble, color: Colors.white, size: 22),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Main Row: Left selectors, Center board, Right move log
+        Expanded(
+          child: Row(
+            children: [
+              // Left Panel: Piece Selectors
+              Container(
+                width: 120,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'TEAL',
+                        style: TextStyle(
+                          color: Color(0xFF80CBC4),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      PieceSelectorBar(
+                        player: PlayerColor.teal,
+                        selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
+                            ? _selectedPieceType
+                            : null,
+                        isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
+                        onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
+                        isVertical: false,
+                        tokenSize: 32,
+                      ),
+                      const Divider(color: Colors.white12, height: 16),
+                      const Text(
+                        'LIME GREEN',
+                        style: TextStyle(
+                          color: Color(0xFFC5E1A5),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      PieceSelectorBar(
+                        player: PlayerColor.lime,
+                        selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
+                            ? _selectedPieceType
+                            : null,
+                        isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
+                        onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
+                        isVertical: false,
+                        tokenSize: 32,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Center: 8x8 Wood Board
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: WoodBoard(
+                        board: _board,
+                        isRotated: _isRotated,
+                        selectedSquare: _selectedSquare,
+                        legalMoves: _legalMoves,
+                        lastMoveFromTo: _lastMoveFromTo,
+                        recentCaptures: _recentCaptures,
+                        onSquareTap: _onSquareTap,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Right Panel: Move Log summary
+              Container(
+                width: 140,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  border: const Border(left: BorderSide(color: Colors.white10)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'MOVE LOG',
+                          style: TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          '${_moveHistory.length}',
+                          style: const TextStyle(color: Colors.white60, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.white12, height: 10),
+                    Expanded(
+                      child: _moveHistory.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Tap "Play" to start',
+                                style: TextStyle(color: Colors.white38, fontSize: 11),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _moveHistory.length,
+                              itemBuilder: (ctx, i) {
+                                final move = _moveHistory[_moveHistory.length - 1 - i];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Text(
+                                    '${_moveHistory.length - i}. ${move.description}',
+                                    style: const TextStyle(color: Colors.white70, fontSize: 10.5),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactBtn(
+    String label,
+    VoidCallback onTap, {
+    bool isActive = false,
+    bool isDestructive = false,
+    bool highlight = false,
+    Color? backgroundColor,
+  }) {
+    final bg = backgroundColor ??
+        (isActive
+            ? const Color(0xFFE57373)
+            : const Color(0xFF2C3E50).withValues(alpha: 0.85));
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: highlight
+                  ? const Color(0xFF81C784)
+                  : Colors.white.withValues(alpha: 0.25),
+              width: highlight ? 1.4 : 1,
             ),
-          ],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isDestructive && !isActive ? const Color(0xFFFFCDD2) : Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );

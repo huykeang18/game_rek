@@ -43,6 +43,44 @@ void main() {
     expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
   });
 
+  testWidgets('Responsive layouts verification across multiple device screen sizes', (WidgetTester tester) async {
+    final sizes = [
+      const Size(320, 568),   // Small compact phone (iPhone SE 1st gen)
+      const Size(390, 844),   // Standard modern phone (iPhone 14 / Android)
+      const Size(768, 1024),  // Tablet portrait (iPad)
+      const Size(844, 390),   // Phone landscape
+      const Size(1200, 800),  // Desktop window / Web
+    ];
+
+    for (final size in sizes) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const RekGameApp());
+      await tester.pumpAndSettle();
+
+      // Home screen renders cleanly on this size
+      expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
+
+      // Scroll to and navigate to game board
+      final setupBtn = find.text('Board Setup & Editor');
+      await tester.ensureVisible(setupBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(setupBtn);
+      await tester.pumpAndSettle();
+
+      // Verify essential game elements render with zero exceptions on this screen size
+      expect(find.text('Rotate Baord'), findsOneWidget);
+      expect(find.byIcon(Icons.wifi), findsOneWidget);
+
+      // Return to home
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+    }
+  });
+
   test('Standard Cambodian Rek initial setup verification', () {
     final board = RekRules.createInitialBoard();
 

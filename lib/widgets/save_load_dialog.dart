@@ -41,12 +41,16 @@ class _SaveLoadDialogState extends State<SaveLoadDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final dialogWidth = screenSize.width * 0.92 > 480 ? 480.0 : screenSize.width * 0.92;
+    final dialogHeight = screenSize.height * 0.88 > 520 ? 520.0 : screenSize.height * 0.88;
+
     return Dialog(
       backgroundColor: const Color(0xFF263238),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: 440,
-        height: 480,
+        width: dialogWidth,
+        height: dialogHeight,
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
