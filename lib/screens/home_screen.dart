@@ -844,22 +844,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       width: 108,
       height: 108,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const RadialGradient(
-          colors: [
-            Color(0xFF2C3E50),
-            Color(0xFF1A252F),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFD4AF37),
-          width: 3.5,
+          width: 3.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-            blurRadius: 20,
-            spreadRadius: 2,
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+            blurRadius: 16,
+            spreadRadius: 1,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
@@ -869,7 +863,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ],
       ),
-      child: ClipOval(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
         child: Image.asset(
           'assets/images/logo.png',
           width: 108,
