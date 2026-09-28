@@ -57,7 +57,7 @@ class _RekGameAppState extends State<RekGameApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Cambodian Rek (ល្បែងរែក)',
+      title: 'Game Rek (ល្បែងរែក)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,

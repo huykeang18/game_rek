@@ -600,4 +600,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(AudioService.instance.isAppInBackground, isFalse);
   });
+
+  testWidgets('App displays Game Rek title and logo emblem on HomeScreen', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // Verify "GAME REK" title is rendered prominently
+    expect(find.text('GAME REK'), findsOneWidget);
+
+    // Verify logo asset is present in the hero emblem
+    final logoFinder = find.byWidgetPredicate(
+      (widget) => widget is Image && widget.image is AssetImage && (widget.image as AssetImage).assetName == 'assets/images/logo.png',
+    );
+    expect(logoFinder, findsOneWidget);
+  });
 }
+

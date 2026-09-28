@@ -627,13 +627,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   const SizedBox(height: 4),
+                  const Text(
+                    'GAME REK',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3.0,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     lang.englishTitle,
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.5,
+                      color: Color(0xFFFFD54F),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -736,13 +746,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             const SizedBox(height: 4),
 
             // English Title
+            const Text(
+              'GAME REK',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3.0,
+              ),
+            ),
+
+            const SizedBox(height: 2),
+
             Text(
               lang.englishTitle,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2.5,
+                color: Color(0xFFFFD54F),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
               ),
             ),
 
@@ -819,8 +841,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildHeroEmblem() {
     return Container(
-      width: 100,
-      height: 100,
+      width: 108,
+      height: 108,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const RadialGradient(
@@ -835,48 +857,54 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-            blurRadius: 18,
+            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+            blurRadius: 20,
             spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Center(
-        child: SizedBox(
-          width: 74,
-          height: 74,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Lime Green piece in background
-              const Positioned(
-                bottom: 6,
-                right: 6,
-                child: PieceTokenWidget(
-                  player: PlayerColor.lime,
-                  type: PieceType.crowned,
-                  size: 40,
-                  isSelected: true,
-                ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: 108,
+          height: 108,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: SizedBox(
+              width: 74,
+              height: 74,
+              child: Stack(
+                alignment: Alignment.center,
+                children: const [
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: PieceTokenWidget(
+                      player: PlayerColor.lime,
+                      type: PieceType.crowned,
+                      size: 40,
+                      isSelected: true,
+                    ),
+                  ),
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: PieceTokenWidget(
+                      player: PlayerColor.teal,
+                      type: PieceType.crowned,
+                      size: 40,
+                      isSelected: false,
+                    ),
+                  ),
+                ],
               ),
-              // Teal piece in foreground
-              const Positioned(
-                top: 6,
-                left: 6,
-                child: PieceTokenWidget(
-                  player: PlayerColor.teal,
-                  type: PieceType.crowned,
-                  size: 40,
-                  isSelected: false,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
