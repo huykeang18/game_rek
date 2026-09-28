@@ -5,7 +5,6 @@ import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
 import '../widgets/piece_token_widget.dart';
 import '../widgets/rules_dialog.dart';
-import '../widgets/save_load_dialog.dart';
 import 'rek_game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -63,31 +62,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     showDialog(
       context: context,
       builder: (_) => const RulesDialog(moveHistory: []),
-    );
-  }
-
-  void _showLoadDialog() {
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (_) => SaveLoadDialog(
-        isSaveMode: false,
-        currentState: SavedGameState(
-          id: '',
-          name: '',
-          timestamp: DateTime.now(),
-          board: [],
-          currentTurn: PlayerColor.lime,
-          isPlayMode: false,
-        ),
-        onLoad: (savedState) {
-          _navigateToGame(
-            startInPlayMode: savedState.isPlayMode,
-            vsAi: true,
-            initialSavedState: savedState,
-          );
-        },
-      ),
     );
   }
 
@@ -299,24 +273,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     onTap: () => _navigateToGame(startInPlayMode: false, vsAi: true),
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSecondaryCard(
-                          icon: Icons.folder_open_outlined,
-                          title: 'Load Game',
-                          onTap: _showLoadDialog,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _buildSecondaryCard(
-                          icon: Icons.menu_book_outlined,
-                          title: 'Rules & Guide',
-                          onTap: _showRules,
-                        ),
-                      ),
-                    ],
+                  _buildMenuCard(
+                    icon: Icons.menu_book_outlined,
+                    iconColor: const Color(0xFFFFD54F),
+                    title: 'Rules & Guide',
+                    subtitle: 'Learn Rek shoulder-pole captures & tactics',
+                    onTap: _showRules,
                   ),
                 ],
               ),
@@ -419,25 +381,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
 
                           const SizedBox(height: 10),
-
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildSecondaryCard(
-                                  icon: Icons.folder_open_outlined,
-                                  title: 'Load Game',
-                                  onTap: _showLoadDialog,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildSecondaryCard(
-                                  icon: Icons.menu_book_outlined,
-                                  title: 'Rules & Guide',
-                                  onTap: _showRules,
-                                ),
-                              ),
-                            ],
+                          _buildMenuCard(
+                            icon: Icons.menu_book_outlined,
+                            iconColor: const Color(0xFFFFD54F),
+                            title: 'Rules & Guide',
+                            subtitle: 'Learn Rek shoulder-pole captures & tactics',
+                            onTap: _showRules,
                           ),
 
                           const SizedBox(height: 24),
@@ -599,53 +548,4 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildSecondaryCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF263238).withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: const Color(0xFFFFD54F), size: 20),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

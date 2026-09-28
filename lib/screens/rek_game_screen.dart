@@ -183,26 +183,6 @@ class _RekGameScreenState extends State<RekGameScreen> {
     );
   }
 
-  void _onLoadGame() {
-    HapticFeedback.lightImpact();
-    final currentState = SavedGameState(
-      id: '',
-      name: '',
-      timestamp: DateTime.now(),
-      board: _board,
-      currentTurn: _currentTurn,
-      isPlayMode: _isPlaying,
-    );
-
-    showDialog(
-      context: context,
-      builder: (_) => SaveLoadDialog(
-        isSaveMode: false,
-        currentState: currentState,
-        onLoad: _loadSavedGame,
-      ),
-    );
-  }
 
   void _loadSavedGame(SavedGameState state) {
     setState(() {
@@ -393,7 +373,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
               Navigator.pop(context);
               setState(() => _isPlaying = false);
             },
-            child: const Text('Edit Board', style: TextStyle(color: Colors.white70)),
+            child: const Text('Close', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
@@ -556,11 +536,10 @@ class _RekGameScreenState extends State<RekGameScreen> {
           tokenSize: tokenSize,
         ),
 
-        // Bottom Menu: Yellow Back Arrow, Save, Load Game, Play, White Chat Bubble
+        // Bottom Menu: Yellow Back Arrow, Save, Play, White Chat Bubble
         BottomMenuBar(
           onBack: _onBack,
           onSave: _onSave,
-          onLoadGame: _onLoadGame,
           onPlay: _onPlay,
           onChat: _onChat,
           isPlaying: _isPlaying,
@@ -615,10 +594,8 @@ class _RekGameScreenState extends State<RekGameScreen> {
               const SizedBox(width: 6),
               _buildCompactBtn('Save', _onSave),
               const SizedBox(width: 6),
-              _buildCompactBtn('Load Game', _onLoadGame),
-              const SizedBox(width: 6),
               _buildCompactBtn(
-                _isPlaying ? 'Edit Board' : 'Play',
+                'Play',
                 _onPlay,
                 highlight: true,
                 backgroundColor: _isPlaying ? const Color(0xFFE65100) : const Color(0xFF2E7D32),

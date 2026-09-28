@@ -15,7 +15,6 @@ void main() {
     expect(find.text('Play vs AI'), findsOneWidget);
     expect(find.text('Pass & Play (2 Players)'), findsOneWidget);
     expect(find.text('Board Setup & Editor'), findsOneWidget);
-    expect(find.text('Load Game'), findsOneWidget);
     expect(find.text('Rules & Guide'), findsOneWidget);
 
     // 2. Tap "Board Setup & Editor" to navigate into the game screen
@@ -30,7 +29,6 @@ void main() {
 
     // 4. Verify Bottom Menu elements on game screen
     expect(find.text('Save'), findsOneWidget);
-    expect(find.text('Load Game'), findsOneWidget);
     expect(find.text('Play'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble), findsOneWidget);

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class BottomMenuBar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onSave;
-  final VoidCallback onLoadGame;
   final VoidCallback onPlay;
   final VoidCallback onChat;
   final bool isPlaying;
@@ -12,7 +11,6 @@ class BottomMenuBar extends StatelessWidget {
     super.key,
     required this.onBack,
     required this.onSave,
-    required this.onLoadGame,
     required this.onPlay,
     required this.onChat,
     this.isPlaying = false,
@@ -54,9 +52,9 @@ class BottomMenuBar extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
 
-              // Center Buttons: "Save", "Load Game", "Play"
+              // Center Buttons: "Save" and "Play"
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -65,15 +63,9 @@ class BottomMenuBar extends StatelessWidget {
                     onTap: onSave,
                     backgroundColor: const Color(0xFF37474F),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   _buildBottomButton(
-                    label: 'Load Game',
-                    onTap: onLoadGame,
-                    backgroundColor: const Color(0xFF37474F),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildBottomButton(
-                    label: isPlaying ? 'Edit Board' : 'Play',
+                    label: 'Play',
                     onTap: onPlay,
                     backgroundColor: isPlaying
                         ? const Color(0xFFE65100)
@@ -83,7 +75,7 @@ class BottomMenuBar extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
 
               // White chat bubble icon in the bottom right corner
               Material(
@@ -128,7 +120,7 @@ class BottomMenuBar extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: backgroundColor.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(6),
