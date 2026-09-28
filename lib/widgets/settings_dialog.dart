@@ -296,6 +296,9 @@ class SettingsDialog extends StatelessWidget {
                                 onChanged: (val) {
                                   audio.setBgmVolume(val);
                                 },
+                                onChangeEnd: (_) {
+                                  audio.refreshBgmVolume();
+                                },
                               ),
                             ),
                           ],
@@ -361,6 +364,9 @@ class SettingsDialog extends StatelessWidget {
                                 max: 1.0,
                                 onChanged: (val) {
                                   audio.setSfxVolume(val);
+                                },
+                                onChangeEnd: (_) {
+                                  audio.playMove();
                                 },
                               ),
                             ),

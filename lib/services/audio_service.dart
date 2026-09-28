@@ -77,8 +77,9 @@ class AudioService extends ChangeNotifier {
   final AudioPlayer _sfxPlayer = AudioPlayer(playerId: 'sfx_player');
 
   static final Map<String, String> _macAssetPaths = {};
+  int _bgmGeneration = 0;
   Process? _macBgmProcess;
-  bool _macBgmLoopRunning = false;
+  Process? _lastSfxProcess;
 
   bool _bgmEnabled = true;
   double _bgmVolume = 0.6;
@@ -116,6 +117,7 @@ class AudioService extends ChangeNotifier {
       _sfxVolume = prefs.getDouble(_keySfxVolume) ?? 0.8;
 
       if (!kIsWeb && Platform.isMacOS) {
+        Process.run('/usr/bin/killall', ['afplay']).catchError((_) => ProcessResult(0, 0, '', ''));
         await _prepareMacAssets();
       }
 
@@ -170,15 +172,15 @@ class AudioService extends ChangeNotifier {
   }
 
   Future<void> _extractMacAsset(String assetPath, Directory tempDir) async {
+    final localFile = File('assets/$assetPath');
+    if (localFile.existsSync() && localFile.lengthSync() > 0) {
+      _macAssetPaths[assetPath] = localFile.absolute.path;
+      return;
+    }
     final fileName = assetPath.split('/').last;
     final targetFile = File('${tempDir.path}/$fileName');
     if (targetFile.existsSync() && targetFile.lengthSync() > 0) {
       _macAssetPaths[assetPath] = targetFile.path;
-      return;
-    }
-    final localFile = File('assets/$assetPath');
-    if (localFile.existsSync() && localFile.lengthSync() > 0) {
-      _macAssetPaths[assetPath] = localFile.absolute.path;
       return;
     }
     try {
@@ -191,8 +193,10 @@ class AudioService extends ChangeNotifier {
   }
 
   Future<void> _startBgm() async {
-    _macBgmLoopRunning = false;
+    _bgmGeneration++;
+    final gen = _bgmGeneration;
     _macBgmProcess?.kill();
+    _macBgmProcess = null;
 
     if (!_bgmEnabled) {
       _isPlayingBgm = false;
@@ -205,10 +209,9 @@ class AudioService extends ChangeNotifier {
     if (!kIsWeb && Platform.isMacOS) {
       final path = _macAssetPaths[track.assetPath] ?? 'assets/${track.assetPath}';
       if (File(path).existsSync()) {
-        _macBgmLoopRunning = true;
         _isPlayingBgm = true;
         notifyListeners();
-        _runMacBgmLoop(path);
+        _runMacBgmLoop(path, gen);
         return;
       }
     }
@@ -226,13 +229,20 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  void _runMacBgmLoop(String path) async {
-    while (_macBgmLoopRunning && _bgmEnabled) {
+  void _runMacBgmLoop(String path, int gen) async {
+    while (_bgmGeneration == gen && _bgmEnabled && _isPlayingBgm) {
       try {
-        _macBgmProcess = await Process.start('/usr/bin/afplay', ['-v', _bgmVolume.toString(), path]);
-        await _macBgmProcess!.exitCode;
-        if (!_macBgmLoopRunning || !_bgmEnabled) break;
-        await Future.delayed(const Duration(milliseconds: 150));
+        final proc = await Process.start('/usr/bin/afplay', ['-v', _bgmVolume.toString(), path]);
+        if (_bgmGeneration != gen) {
+          proc.kill();
+          break;
+        }
+        _macBgmProcess = proc;
+        await proc.exitCode;
+        if (_bgmGeneration != gen || !_bgmEnabled || !_isPlayingBgm) {
+          break;
+        }
+        await Future.delayed(const Duration(milliseconds: 200));
       } catch (e) {
         debugPrint('Mac BGM loop error: $e');
         break;
@@ -251,12 +261,9 @@ class AudioService extends ChangeNotifier {
       await prefs.setBool(_keyBgmEnabled, enabled);
 
       if (enabled) {
-        await _bgmPlayer.setVolume(_bgmVolume);
         await _startBgm();
       } else {
-        await _bgmPlayer.pause();
-        _isPlayingBgm = false;
-        notifyListeners();
+        await pauseBgm();
       }
     } catch (e) {
       debugPrint('Error toggling BGM: $e');
@@ -277,6 +284,13 @@ class AudioService extends ChangeNotifier {
       await prefs.setDouble(_keyBgmVolume, clamped);
     } catch (e) {
       debugPrint('Error setting BGM volume: $e');
+    }
+  }
+
+  /// Refresh active macOS BGM process with the newly set volume without breaking loop
+  Future<void> refreshBgmVolume() async {
+    if (!kIsWeb && Platform.isMacOS && _bgmEnabled && _isPlayingBgm) {
+      await _startBgm();
     }
   }
 
@@ -337,9 +351,16 @@ class AudioService extends ChangeNotifier {
     if (!kIsWeb && Platform.isMacOS) {
       final path = _macAssetPaths[assetPath] ?? 'assets/$assetPath';
       if (File(path).existsSync()) {
-        Process.start('/usr/bin/afplay', ['-v', vol.toString(), path]).catchError((e) {
+        _lastSfxProcess?.kill();
+        Process.start('/usr/bin/afplay', ['-v', vol.toString(), path]).then((proc) {
+          _lastSfxProcess = proc;
+          proc.exitCode.then((_) {
+            if (_lastSfxProcess == proc) {
+              _lastSfxProcess = null;
+            }
+          });
+        }).catchError((e) {
           debugPrint('afplay error ($assetPath): $e');
-          return null as dynamic;
         });
         return;
       }
@@ -404,14 +425,13 @@ class AudioService extends ChangeNotifier {
 
   /// Pause BGM temporarily (e.g. app lifecycle background)
   Future<void> pauseBgm() async {
-    _macBgmLoopRunning = false;
+    _bgmGeneration++;
     _macBgmProcess?.kill();
+    _macBgmProcess = null;
+    _isPlayingBgm = false;
+    notifyListeners();
     try {
-      if (_isPlayingBgm) {
-        await _bgmPlayer.pause();
-        _isPlayingBgm = false;
-        notifyListeners();
-      }
+      await _bgmPlayer.pause();
     } catch (e) {
       debugPrint('Error pausing BGM: $e');
     }
@@ -430,8 +450,11 @@ class AudioService extends ChangeNotifier {
 
   @override
   void dispose() {
-    _macBgmLoopRunning = false;
+    _bgmGeneration++;
     _macBgmProcess?.kill();
+    _macBgmProcess = null;
+    _lastSfxProcess?.kill();
+    _lastSfxProcess = null;
     _bgmPlayer.dispose();
     _sfxPlayer.dispose();
     super.dispose();
