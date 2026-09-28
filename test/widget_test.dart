@@ -474,4 +474,89 @@ void main() {
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('Cancel game warning dialog test: Cancel keeps playing, OK cancels and returns to home', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Start match vs AI
+    await tester.tap(find.text('Play vs AI'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // 2. Verify we are in the game
+    expect(find.text('05:00'), findsNWidgets(2));
+
+    // 3. Attempt to cancel the game by tapping yellow back arrow
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    // 4. Verify Warning alert is formed
+    expect(find.text('Warning'), findsOneWidget);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    expect(find.text('Are you sure you want to cancel the game? Current game progress will be lost.'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('OK'), findsOneWidget);
+
+    // 5. Click "Cancel" ("not click cancle" -> does NOT cancel the game)
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    // Verify warning dialog dismissed and we are STILL in the match!
+    expect(find.text('Warning'), findsNothing);
+    expect(find.text('05:00'), findsNWidgets(2));
+
+    // 6. Attempt to cancel the game again
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('Warning'), findsOneWidget);
+
+    // 7. Click "OK" ("if ok click ok" -> confirms cancel and returns home)
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    // Verify match is cancelled and returned to Home Page
+    expect(find.text('CAMBODIAN REK CHESS'), findsOneWidget);
+    expect(find.text('Play vs AI'), findsOneWidget);
+
+    // 8. Test Khmer language localization
+    await LanguageService.instance.setLanguage(AppLanguage.khmer);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('លេងជាមួយ AI'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ចាប់ផ្តើមលេង'));
+    await tester.pumpAndSettle();
+
+    // Tap back arrow to cancel game in Khmer
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
+    // Verify Khmer warning alert
+    expect(find.text('ការព្រមាន'), findsOneWidget);
+    expect(find.text('បោះបង់'), findsOneWidget); // Cancel
+    expect(find.text('យល់ព្រម'), findsOneWidget); // OK
+
+    // Tap Cancel in Khmer
+    await tester.tap(find.text('បោះបង់'));
+    await tester.pumpAndSettle();
+    expect(find.text('ការព្រមាន'), findsNothing);
+
+    // Tap back again and confirm with OK in Khmer
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('យល់ព្រម'));
+    await tester.pumpAndSettle();
+
+    // Back to Home screen in Khmer
+    expect(find.text('ល្បែងរែក'), findsOneWidget);
+  });
 }

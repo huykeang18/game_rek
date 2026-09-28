@@ -50,6 +50,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
   // Mode: Editor vs Play
   bool _isPlaying = false;
+  bool _isExiting = false;
 
   // Editor State
   PlayerColor _selectedPlayer = PlayerColor.lime;
@@ -440,8 +441,125 @@ class _RekGameScreenState extends State<RekGameScreen> {
   // ---------------------------------------------------------
   // Bottom Menu Actions
   // ---------------------------------------------------------
-  void _onBack() {
+  Future<bool> _showCancelGameWarningDialog() async {
+    AudioService.instance.playClick();
+    HapticFeedback.mediumImpact();
+
+    final wasPlaying = _isPlaying;
+    if (wasPlaying) {
+      _pauseTimer();
+    }
+
+    final lang = LanguageService.instance;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF263238),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB300).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFFFB300),
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                lang.warning,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lang.cancelGameWarning,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actions: [
+          // Cancel button (dismisses alert, continues game)
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: const BorderSide(color: Colors.white24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            onPressed: () {
+              AudioService.instance.playClick();
+              Navigator.of(ctx).pop(false);
+            },
+            child: Text(lang.cancel),
+          ),
+          // OK button (confirms cancel, exits game)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD32F2F),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () {
+              AudioService.instance.playClick();
+              Navigator.of(ctx).pop(true);
+            },
+            child: Text(
+              lang.ok,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      return true;
+    } else {
+      if (wasPlaying && mounted && _gameOverResult == null) {
+        _startTimer();
+      }
+      return false;
+    }
+  }
+
+  Future<void> _onBack() async {
     HapticFeedback.lightImpact();
+    if (_isPlaying && _gameOverResult == null) {
+      final shouldLeave = await _showCancelGameWarningDialog();
+      if (shouldLeave == true && mounted) {
+        setState(() => _isExiting = true);
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          setState(() => _isPlaying = false);
+        }
+      }
+      return;
+    }
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else if (_isPlaying) {
@@ -492,25 +610,40 @@ class _RekGameScreenState extends State<RekGameScreen> {
     );
   }
 
-  void _onPlay() {
+  Future<void> _onPlay() async {
     AudioService.instance.playClick();
     HapticFeedback.mediumImpact();
+    if (_isPlaying && _gameOverResult == null) {
+      final shouldCancel = await _showCancelGameWarningDialog();
+      if (shouldCancel == true && mounted) {
+        if (widget.startInPlayMode) {
+          setState(() => _isExiting = true);
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+            return;
+          }
+        }
+        setState(() {
+          _isPlaying = false;
+          _selectedSquare = null;
+          _legalMoves = [];
+          _isEraserActive = false;
+        });
+        _pauseTimer();
+      }
+      return;
+    }
+
     setState(() {
-      _isPlaying = !_isPlaying;
+      _isPlaying = true;
       _selectedSquare = null;
       _legalMoves = [];
       _isEraserActive = false;
-      if (_isPlaying) {
-        _gameOverResult = RekRules.checkGameOver(_board, _currentTurn);
-      }
+      _gameOverResult = RekRules.checkGameOver(_board, _currentTurn);
     });
 
-    if (_isPlaying) {
-      AudioService.instance.playGameStart();
-      _startTimer();
-    } else {
-      _pauseTimer();
-    }
+    AudioService.instance.playGameStart();
+    _startTimer();
 
     if (_isPlaying && _vsAi && _currentTurn == _ai.aiPlayer && _gameOverResult == null) {
       _triggerAiMove();
@@ -932,10 +1065,20 @@ class _RekGameScreenState extends State<RekGameScreen> {
             ListTile(
               leading: const Icon(Icons.home, color: Color(0xFFFFD54F)),
               title: const Text('Return to Home Page', style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
+                if (_isPlaying && _gameOverResult == null) {
+                  final shouldLeave = await _showCancelGameWarningDialog();
+                  if (shouldLeave == true && mounted) {
+                    setState(() => _isExiting = true);
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  }
+                  return;
+                }
                 if (Navigator.of(context).canPop()) {
-                  Navigator.pop(context);
+                  Navigator.of(context).pop();
                 }
               },
             ),
@@ -962,6 +1105,17 @@ class _RekGameScreenState extends State<RekGameScreen> {
   );
 }
 
+  Future<void> _handlePopScope(bool didPop) async {
+    if (didPop) return;
+    final shouldLeave = await _showCancelGameWarningDialog();
+    if (shouldLeave == true && mounted) {
+      setState(() => _isExiting = true);
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -969,18 +1123,22 @@ class _RekGameScreenState extends State<RekGameScreen> {
       builder: (context, _) {
         final lang = LanguageService.instance;
 
-        return Scaffold(
-          backgroundColor: const Color(0xFF1E272C),
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isLandscape = constraints.maxWidth > constraints.maxHeight * 1.15;
-                if (isLandscape) {
-                  return _buildLandscapeLayout(context, constraints, lang);
-                } else {
-                  return _buildPortraitLayout(context, constraints, lang);
-                }
-              },
+        return PopScope(
+          canPop: _isExiting || !_isPlaying || _gameOverResult != null,
+          onPopInvokedWithResult: (didPop, _) => _handlePopScope(didPop),
+          child: Scaffold(
+            backgroundColor: const Color(0xFF1E272C),
+            body: SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLandscape = constraints.maxWidth > constraints.maxHeight * 1.15;
+                  if (isLandscape) {
+                    return _buildLandscapeLayout(context, constraints, lang);
+                  } else {
+                    return _buildPortraitLayout(context, constraints, lang);
+                  }
+                },
+              ),
             ),
           ),
         );

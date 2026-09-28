@@ -139,6 +139,13 @@ class LanguageService extends ChangeNotifier {
   String get playAgain => isKhmer ? 'លេងម្តងទៀត' : 'Play Again';
   String get close => isKhmer ? 'បិទ' : 'Close';
 
+  // Cancel / Quit Game Warning Dialog
+  String get warning => isKhmer ? 'ការព្រមាន' : 'Warning';
+  String get cancelGameWarning => isKhmer
+      ? 'តើអ្នកពិតជាចង់បោះបង់ការប្រកួត ហើយចាកចេញមែនទេ? ការលេងបច្ចុប្បន្ននឹងត្រូវបាត់បង់។'
+      : 'Are you sure you want to cancel the game? Current game progress will be lost.';
+  String get ok => isKhmer ? 'យល់ព្រម' : 'OK';
+
   // Settings & Audio Dialog
   String get settingsAndAudio => isKhmer ? 'ការកំណត់ & សំឡេង' : 'Settings & Audio';
   String get languageSection => isKhmer ? 'ភាសា / Language' : 'Language / ភាសា';
