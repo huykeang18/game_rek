@@ -446,31 +446,19 @@ void main() {
     await tester.pumpWidget(const RekGameApp());
     await tester.pumpAndSettle();
 
-    // 1. Verify separate points button appears on top bar
-    expect(find.text('100'), findsOneWidget);
+    // 1. Verify point button is taken out of top bar - only username button is present
+    expect(find.text('100'), findsNothing);
+    expect(find.text(UserService.instance.username), findsOneWidget);
 
     // 2. Open Profile dialog using username button
     await tester.tap(find.text(UserService.instance.username));
     await tester.pumpAndSettle();
 
-    // Verify Profile dialog opens cleanly (independent username editing)
+    // Verify Profile dialog opens cleanly for username & avatar editing
     expect(find.text('Edit Player Profile'), findsOneWidget);
 
     // Close profile dialog
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
-
-    // 3. Open dedicated Points Dialog using points button
-    await tester.tap(find.text('100'));
-    await tester.pumpAndSettle();
-
-    // Verify Points & Rewards dialog is shown independently
-    expect(find.text('Points & Rewards'), findsOneWidget);
-    expect(find.text('Total Score'), findsOneWidget);
-    expect(find.text('1 wins'), findsOneWidget);
-
-    // Close points dialog
-    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
   });
 }

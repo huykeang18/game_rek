@@ -17,7 +17,6 @@ import '../widgets/rules_dialog.dart';
 import '../widgets/save_load_dialog.dart';
 import '../widgets/game_status_overlay.dart';
 import '../widgets/profile_edit_dialog.dart';
-import '../widgets/points_dialog.dart';
 import '../widgets/settings_dialog.dart';
 import '../widgets/language_button.dart';
 import '../widgets/player_timer_card.dart';
@@ -589,22 +588,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
                         );
                       },
                     ),
-                    ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.stars, color: Color(0xFFFFD54F)),
-                      title: Text(lang.pointsDialogTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      subtitle: Text(
-                        '⭐ ${UserService.instance.points} pts (${UserService.instance.wins} wins)',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        showDialog(
-                          context: context,
-                          builder: (_) => const PointsDialog(),
-                        );
-                      },
-                    ),
+
                     ListTile(
                       dense: true,
                       leading: const Icon(Icons.timer_outlined, color: Color(0xFFFFB74D)),
