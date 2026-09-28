@@ -444,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   onTap: _openProfile,
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF263238).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(20),
@@ -453,21 +453,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(UserService.instance.avatar, style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
+                        Text(UserService.instance.avatar, style: const TextStyle(fontSize: 15)),
+                        const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             UserService.instance.username,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.edit, size: 12, color: Color(0xFFFFD54F)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, size: 10, color: Color(0xFFFFD54F)),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${UserService.instance.points}',
+                                style: const TextStyle(
+                                  color: Color(0xFFFFD54F),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -476,7 +499,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
 
           // Settings, Music & Language quick controls
           Row(
@@ -484,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               // Language Switcher button
               const LanguageToggleButton(),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
 
               // Music toggle button
               ListenableBuilder(
@@ -492,10 +515,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 builder: (context, _) {
                   final audio = AudioService.instance;
                   return IconButton(
+                    padding: const EdgeInsets.all(5),
+                    constraints: const BoxConstraints(),
                     icon: Icon(
                       audio.bgmEnabled ? Icons.music_note : Icons.music_off,
                       color: audio.bgmEnabled ? const Color(0xFF81C784) : Colors.white38,
-                      size: 22,
+                      size: 20,
                     ),
                     tooltip: audio.bgmEnabled ? 'Music: ON' : 'Music: OFF',
                     onPressed: () {
@@ -505,9 +530,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   );
                 },
               ),
+              const SizedBox(width: 2),
               // Settings button
               IconButton(
-                icon: const Icon(Icons.settings, color: Color(0xFFFFD54F), size: 22),
+                padding: const EdgeInsets.all(5),
+                constraints: const BoxConstraints(),
+                icon: const Icon(Icons.settings, color: Color(0xFFFFD54F), size: 20),
                 tooltip: 'Settings & Audio',
                 onPressed: _openSettings,
               ),

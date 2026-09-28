@@ -12,15 +12,21 @@ class UserService extends ChangeNotifier {
 
   static const String _keyUsername = 'rek_username';
   static const String _keyAvatar = 'rek_avatar';
+  static const String _keyPoints = 'rek_points';
+  static const String _keyWins = 'rek_wins';
   static const String _defaultUsername = 'RekMaster';
   static const String _defaultAvatar = '👑';
 
   String _username = _defaultUsername;
   String _avatar = _defaultAvatar;
+  int _points = 0;
+  int _wins = 0;
   bool _initialized = false;
 
   String get username => _username;
   String get avatar => _avatar;
+  int get points => _points;
+  int get wins => _wins;
   bool get isInitialized => _initialized;
 
   /// Available avatar options for selection
@@ -42,12 +48,16 @@ class UserService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _username = prefs.getString(_keyUsername) ?? _defaultUsername;
       _avatar = prefs.getString(_keyAvatar) ?? _defaultAvatar;
+      _points = prefs.getInt(_keyPoints) ?? 0;
+      _wins = prefs.getInt(_keyWins) ?? 0;
       _initialized = true;
       notifyListeners();
     } catch (e) {
       debugPrint('Error initializing UserService: $e');
       _username = _defaultUsername;
       _avatar = _defaultAvatar;
+      _points = 0;
+      _wins = 0;
       _initialized = true;
     }
   }
@@ -103,6 +113,36 @@ class UserService extends ChangeNotifier {
       } catch (e) {
         debugPrint('Error saving profile: $e');
       }
+    }
+  }
+
+  /// Award points and increment win count when the player wins a match
+  Future<void> addWinPoints(int earnedPoints) async {
+    if (earnedPoints <= 0) return;
+    _points += earnedPoints;
+    _wins += 1;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyPoints, _points);
+      await prefs.setInt(_keyWins, _wins);
+    } catch (e) {
+      debugPrint('Error saving points: $e');
+    }
+  }
+
+  /// Reset points and wins (useful for testing or profile reset)
+  Future<void> resetPoints() async {
+    _points = 0;
+    _wins = 0;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyPoints, 0);
+      await prefs.setInt(_keyWins, 0);
+    } catch (e) {
+      debugPrint('Error resetting points: $e');
     }
   }
 }

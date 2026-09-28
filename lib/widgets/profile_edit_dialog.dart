@@ -135,8 +135,82 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
                       ],
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
                     const Divider(color: Colors.white12, height: 1),
+                    const SizedBox(height: 16),
+
+                    // Player Score & Stats Banner
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF263238),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.stars, color: Color(0xFFFFD54F), size: 24),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        lang.totalPointsTitle,
+                                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      Text(
+                                        '${UserService.instance.points} pts',
+                                        style: const TextStyle(
+                                          color: Color(0xFFFFD54F),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(width: 1, height: 30, color: Colors.white12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.emoji_events, color: Color(0xFF81C784), size: 24),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        lang.playerStats,
+                                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      Text(
+                                        lang.totalWinsCount(UserService.instance.wins),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 18),
 
                     // Avatar Selection

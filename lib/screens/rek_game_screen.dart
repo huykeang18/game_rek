@@ -77,6 +77,10 @@ class _RekGameScreenState extends State<RekGameScreen> {
   late int _tealTimeSeconds;
   Timer? _gameTimer;
 
+  // Points & Rewards
+  bool _pointsAwarded = false;
+  int _earnedPointsThisMatch = 0;
+
   int get _tealPiecesCount {
     int count = 0;
     for (final row in _board) {
@@ -181,6 +185,30 @@ class _RekGameScreenState extends State<RekGameScreen> {
     }
   }
 
+  void _processGameWin(GameOverResult result) {
+    if (_pointsAwarded) return;
+    final isPlayerWinner = result.winner == PlayerColor.lime;
+    if (isPlayerWinner) {
+      _pointsAwarded = true;
+      int points = 100;
+      if (_vsAi) {
+        switch (widget.aiDifficulty) {
+          case AiDifficulty.easy:
+            points = 50;
+            break;
+          case AiDifficulty.medium:
+            points = 100;
+            break;
+          case AiDifficulty.hard:
+            points = 200;
+            break;
+        }
+      }
+      _earnedPointsThisMatch = points;
+      UserService.instance.addWinPoints(points);
+    }
+  }
+
   void _handleTimeout(PlayerColor timedOutPlayer) {
     _pauseTimer();
     final winner = timedOutPlayer == PlayerColor.lime ? PlayerColor.teal : PlayerColor.lime;
@@ -202,6 +230,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     );
 
     _gameOverResult = gameOver;
+    _processGameWin(gameOver);
     final isPlayerWinner = winner == PlayerColor.lime;
     if (isPlayerWinner || !_vsAi) {
       AudioService.instance.playWin();
@@ -335,6 +364,8 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _lastNotification = null;
       _currentTurn = PlayerColor.lime;
       _moveHistory.clear();
+      _pointsAwarded = false;
+      _earnedPointsThisMatch = 0;
       _resetTimer();
     });
   }
@@ -546,7 +577,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
                       leading: const Icon(Icons.person, color: Color(0xFF81C784)),
                       title: Text(lang.changeProfileTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       subtitle: Text(
-                        '${lang.playerUsername}: ${UserService.instance.avatar} ${UserService.instance.username}',
+                        '${lang.playerUsername}: ${UserService.instance.avatar} ${UserService.instance.username} • ⭐ ${UserService.instance.points} pts',
                         style: const TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       onTap: () {
@@ -714,6 +745,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     if (gameOver != null) {
       _pauseTimer();
+      _processGameWin(gameOver);
       final isPlayerWinner = gameOver.winner == PlayerColor.lime;
       if (isPlayerWinner || !_vsAi) {
         AudioService.instance.playWin();
@@ -773,9 +805,66 @@ class _RekGameScreenState extends State<RekGameScreen> {
             ),
           ],
         ),
-        content: Text(
-          result.reason,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              result.reason,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            if (isPlayerWinner && _earnedPointsThisMatch > 0) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.stars, color: Color(0xFFFFD54F), size: 32),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang.pointsEarned(_earnedPointsThisMatch),
+                            style: const TextStyle(
+                              color: Color(0xFFFFD54F),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${lang.totalPointsTitle}: ${UserService.instance.points} pts',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(

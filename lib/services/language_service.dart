@@ -198,4 +198,13 @@ class LanguageService extends ChangeNotifier {
   String timeOutLoss(String player) => isKhmer
       ? '$player បានអស់ពេលកំណត់!'
       : '$player ran out of time!';
+
+  // Points & Rewards Strings
+  String get pointsLabel => isKhmer ? 'ពិន្ទុ' : 'Points';
+  String pointsCount(int pts) => isKhmer ? '$pts ពិន្ទុ' : '$pts pts';
+  String pointsEarned(int pts) => isKhmer ? '+$pts ពិន្ទុ!' : '+$pts Points!';
+  String get victoryPoints => isKhmer ? 'ពិន្ទុជ័យជម្នះ' : 'Victory Reward';
+  String get totalPointsTitle => isKhmer ? 'ពិន្ទុសរុប' : 'Total Score';
+  String totalWinsCount(int wins) => isKhmer ? 'ឈ្នះ $wins ប្រកួត' : '$wins wins';
+  String get playerStats => isKhmer ? 'ស្ថិតិលេង' : 'Player Stats';
 }

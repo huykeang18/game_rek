@@ -427,4 +427,38 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('Player wins and earns points test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await UserService.instance.resetPoints();
+    expect(UserService.instance.points, equals(0));
+    expect(UserService.instance.wins, equals(0));
+
+    // Award points
+    await UserService.instance.addWinPoints(100);
+    expect(UserService.instance.points, equals(100));
+    expect(UserService.instance.wins, equals(1));
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Verify points badge appears on top bar
+    expect(find.text('100'), findsOneWidget);
+
+    // 2. Open Profile dialog
+    await tester.tap(find.text(UserService.instance.username));
+    await tester.pumpAndSettle();
+
+    // 3. Verify Points & Stats banner is shown
+    expect(find.text('100 pts'), findsOneWidget);
+    expect(find.text('1 wins'), findsOneWidget);
+
+    // Close profile dialog
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+  });
 }
