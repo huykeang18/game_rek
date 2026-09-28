@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 
 class TopMenuBar extends StatelessWidget {
-  final VoidCallback onEraseAll;
-  final VoidCallback onToggleErase;
+  final VoidCallback? onEraseAll;
+  final VoidCallback? onToggleErase;
   final bool isEraserActive;
   final VoidCallback onRotateBoard;
   final bool isWifiConnected;
   final String labelEraseAll;
   final String labelErase;
   final String labelRotateBoard;
+  final bool showEditorButtons;
 
   const TopMenuBar({
     super.key,
-    required this.onEraseAll,
-    required this.onToggleErase,
-    required this.isEraserActive,
+    this.onEraseAll,
+    this.onToggleErase,
+    this.isEraserActive = false,
     required this.onRotateBoard,
     this.isWifiConnected = true,
     this.labelEraseAll = 'Erase all',
     this.labelErase = 'Erase',
     this.labelRotateBoard = 'Rotate Baord',
+    this.showEditorButtons = true,
   });
 
   @override
@@ -47,19 +49,25 @@ class TopMenuBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Action Buttons: "Erase all", "Erase", "Rotate Baord"
-              _buildMenuButton(
-                label: labelEraseAll,
-                onTap: onEraseAll,
-                isDestructive: true,
-              ),
-              const SizedBox(width: 8),
-              _buildMenuButton(
-                label: labelErase,
-                onTap: onToggleErase,
-                isActive: isEraserActive,
-              ),
-              const SizedBox(width: 8),
+              // Action Buttons: "Erase all", "Erase" (only if showEditorButtons), and "Rotate Baord"
+              if (showEditorButtons) ...[
+                if (onEraseAll != null) ...[
+                  _buildMenuButton(
+                    label: labelEraseAll,
+                    onTap: onEraseAll!,
+                    isDestructive: true,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (onToggleErase != null) ...[
+                  _buildMenuButton(
+                    label: labelErase,
+                    onTap: onToggleErase!,
+                    isActive: isEraserActive,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
               _buildMenuButton(
                 label: labelRotateBoard,
                 onTap: onRotateBoard,

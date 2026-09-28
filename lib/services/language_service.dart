@@ -182,4 +182,16 @@ class LanguageService extends ChangeNotifier {
   String movesPlayed(int count) => isKhmer ? 'បានដើរ $count ក្បាច់' : '$count moves played';
   String get resetBoardTitle => isKhmer ? 'រៀបចំក្តារឡើងវិញ' : 'Reset Board';
   String get resetBoardSubtitle => isKhmer ? 'ត្រឡប់ទៅការរៀបចំដើមនៃល្បែងរែក' : 'Reset back to standard Rek setup';
+
+  // Match Timer Strings
+  String get timerSettings => isKhmer ? 'កំណត់ម៉ោងលេង' : 'Match Timer';
+  String get timerSettingsSub => isKhmer ? 'កំណត់រយៈពេលគិតសម្រាប់អ្នកលេងម្នាក់ៗ' : 'Choose time control per player';
+  String get timer3Min => isKhmer ? '៣ នាទី (លឿន)' : '3 Minutes (Blitz)';
+  String get timer5Min => isKhmer ? '៥ នាទី (ស្តង់ដារ)' : '5 Minutes (Standard)';
+  String get timer10Min => isKhmer ? '១០ នាទី (បុរាណ)' : '10 Minutes (Classical)';
+  String get timerUnlimited => isKhmer ? 'គ្មានកំណត់ (រាប់ឡើង)' : 'Unlimited (Count Up)';
+  String get piecesWord => isKhmer ? 'កូនអុក' : 'pieces';
+  String timeOutLoss(String player) => isKhmer
+      ? '$player បានអស់ពេលកំណត់!'
+      : '$player ran out of time!';
 }

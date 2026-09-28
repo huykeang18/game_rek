@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/rek_piece.dart';
@@ -18,6 +19,7 @@ import '../widgets/game_status_overlay.dart';
 import '../widgets/profile_edit_dialog.dart';
 import '../widgets/settings_dialog.dart';
 import '../widgets/language_button.dart';
+import '../widgets/player_timer_card.dart';
 
 class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
@@ -67,6 +69,33 @@ class _RekGameScreenState extends State<RekGameScreen> {
   late RekAi _ai;
   bool _isAiThinking = false;
 
+  // Match Timer for Players
+  static const int _defaultTimeLimitSeconds = 300; // 5 minutes default
+  int _timeLimitSeconds = _defaultTimeLimitSeconds;
+  int _limeTimeSeconds = _defaultTimeLimitSeconds;
+  int _tealTimeSeconds = _defaultTimeLimitSeconds;
+  Timer? _gameTimer;
+
+  int get _tealPiecesCount {
+    int count = 0;
+    for (final row in _board) {
+      for (final p in row) {
+        if (p != null && p.player == PlayerColor.teal) count++;
+      }
+    }
+    return count;
+  }
+
+  int get _limePiecesCount {
+    int count = 0;
+    for (final row in _board) {
+      for (final p in row) {
+        if (p != null && p.player == PlayerColor.lime) count++;
+      }
+    }
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -84,7 +113,210 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     if (_isPlaying) {
       AudioService.instance.playGameStart();
+      _startTimer();
     }
+  }
+
+  @override
+  void dispose() {
+    _gameTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _gameTimer?.cancel();
+    if (!_isPlaying || _gameOverResult != null) return;
+
+    _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isPlaying || _gameOverResult != null) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_timeLimitSeconds > 0) {
+          if (_currentTurn == PlayerColor.lime) {
+            if (_limeTimeSeconds > 0) {
+              _limeTimeSeconds--;
+              if (_limeTimeSeconds == 0) {
+                _handleTimeout(PlayerColor.lime);
+              }
+            }
+          } else {
+            if (_tealTimeSeconds > 0) {
+              _tealTimeSeconds--;
+              if (_tealTimeSeconds == 0) {
+                _handleTimeout(PlayerColor.teal);
+              }
+            }
+          }
+        } else {
+          // Untimed / Count Up
+          if (_currentTurn == PlayerColor.lime) {
+            _limeTimeSeconds++;
+          } else {
+            _tealTimeSeconds++;
+          }
+        }
+      });
+    });
+  }
+
+  void _pauseTimer() {
+    _gameTimer?.cancel();
+    _gameTimer = null;
+  }
+
+  void _resetTimer([int? newLimit]) {
+    if (newLimit != null) {
+      _timeLimitSeconds = newLimit;
+    }
+    _limeTimeSeconds = _timeLimitSeconds;
+    _tealTimeSeconds = _timeLimitSeconds;
+    if (_isPlaying && _gameOverResult == null) {
+      _startTimer();
+    }
+  }
+
+  void _handleTimeout(PlayerColor timedOutPlayer) {
+    _pauseTimer();
+    final winner = timedOutPlayer == PlayerColor.lime ? PlayerColor.teal : PlayerColor.lime;
+    final lang = LanguageService.instance;
+    final timedOutName = timedOutPlayer == PlayerColor.lime
+        ? '${UserService.instance.avatar} ${UserService.instance.username}'
+        : (_vsAi ? (lang.isKhmer ? '🤖 AI' : '🤖 Teal AI') : (lang.isKhmer ? '👥 អ្នកលេងទី២' : '👥 Player 2'));
+    final winnerName = winner == PlayerColor.lime
+        ? '${UserService.instance.avatar} ${UserService.instance.username}'
+        : (_vsAi ? (lang.isKhmer ? '🤖 AI' : '🤖 Teal AI') : (lang.isKhmer ? '👥 អ្នកលេងទី២' : '👥 Player 2'));
+
+    final reason = lang.isKhmer
+        ? '$timedOutName បានអស់ពេលកំណត់! $winnerName ទទួលបានជ័យជំនះ។'
+        : '$timedOutName ran out of time! $winnerName wins the match.';
+
+    final gameOver = GameOverResult(
+      winner: winner,
+      reason: reason,
+    );
+
+    _gameOverResult = gameOver;
+    final isPlayerWinner = winner == PlayerColor.lime;
+    if (isPlayerWinner || !_vsAi) {
+      AudioService.instance.playWin();
+    } else {
+      AudioService.instance.playDefeat();
+    }
+    _showGameOverDialog(gameOver);
+  }
+
+  String _formatTime(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showTimeControlPicker() {
+    AudioService.instance.playClick();
+    HapticFeedback.lightImpact();
+    final lang = LanguageService.instance;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF263238),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: Color(0xFFFFD54F), size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    lang.timerSettings,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                lang.timerSettingsSub,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              _buildTimeControlOption(ctx, 180, lang.timer3Min, '3:00'),
+              _buildTimeControlOption(ctx, 300, lang.timer5Min, '5:00'),
+              _buildTimeControlOption(ctx, 600, lang.timer10Min, '10:00'),
+              _buildTimeControlOption(ctx, 0, lang.timerUnlimited, '∞'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeControlOption(BuildContext ctx, int seconds, String title, String badge) {
+    final isSelected = _timeLimitSeconds == seconds;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          AudioService.instance.playClick();
+          Navigator.pop(ctx);
+          setState(() {
+            _resetTimer(seconds);
+          });
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF2E7D32).withValues(alpha: 0.3) : const Color(0xFF1E272C),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF81C784) : Colors.white12,
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF81C784) : Colors.white12,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: isSelected ? Colors.black : Colors.white70,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                const Icon(Icons.check_circle, color: Color(0xFF81C784), size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _resetBoardToStandard() {
@@ -99,6 +331,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _lastNotification = null;
       _currentTurn = PlayerColor.lime;
       _moveHistory.clear();
+      _resetTimer();
     });
   }
 
@@ -233,6 +466,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     if (_isPlaying) {
       AudioService.instance.playGameStart();
+      _startTimer();
+    } else {
+      _pauseTimer();
     }
 
     if (_isPlaying && _vsAi && _currentTurn == _ai.aiPlayer && _gameOverResult == null) {
@@ -315,6 +551,21 @@ class _RekGameScreenState extends State<RekGameScreen> {
                           context: context,
                           builder: (_) => const ProfileEditDialog(),
                         );
+                      },
+                    ),
+                    ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.timer_outlined, color: Color(0xFFFFB74D)),
+                      title: Text(lang.timerSettings, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        _timeLimitSeconds == 0
+                            ? lang.timerUnlimited
+                            : '${_timeLimitSeconds ~/ 60} min (${_formatTime(_limeTimeSeconds)} / ${_formatTime(_tealTimeSeconds)})',
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showTimeControlPicker();
                       },
                     ),
                     ListTile(
@@ -458,6 +709,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
     });
 
     if (gameOver != null) {
+      _pauseTimer();
       final isPlayerWinner = gameOver.winner == PlayerColor.lime;
       if (isPlayerWinner || !_vsAi) {
         AudioService.instance.playWin();
@@ -643,7 +895,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     return Column(
       children: [
-        // Top Menu: Green Wi-Fi, Erase all, Erase, Rotate Baord
+        // Top Menu: Green Wi-Fi, Erase all (if editor), Erase (if editor), Rotate Baord
         TopMenuBar(
           onEraseAll: _onEraseAll,
           onToggleErase: _onToggleErase,
@@ -653,18 +905,32 @@ class _RekGameScreenState extends State<RekGameScreen> {
           labelEraseAll: lang.eraseAll,
           labelErase: lang.erase,
           labelRotateBoard: lang.rotateBoard,
+          showEditorButtons: !_isPlaying,
         ),
 
-        // Top Piece Selectors: Teal Plain & Crown
-        PieceSelectorBar(
-          player: PlayerColor.teal,
-          selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
-              ? _selectedPieceType
-              : null,
-          isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
-          onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
-          tokenSize: tokenSize,
-        ),
+        // TOP: PlayerTimerCard in play mode, PieceSelectorBar in editor mode
+        if (_isPlaying)
+          PlayerTimerCard(
+            player: PlayerColor.teal,
+            name: _vsAi ? 'Teal AI (${widget.aiDifficulty.name})' : (lang.isKhmer ? 'អ្នកលេងទី២' : 'Player 2 (Teal)'),
+            avatar: _vsAi ? '🤖' : '👤',
+            piecesCount: _tealPiecesCount,
+            timeSeconds: _tealTimeSeconds,
+            isTurn: _currentTurn == PlayerColor.teal,
+            isAi: _vsAi,
+            isUntimed: _timeLimitSeconds == 0,
+            onTimerTap: _showTimeControlPicker,
+          )
+        else
+          PieceSelectorBar(
+            player: PlayerColor.teal,
+            selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
+                ? _selectedPieceType
+                : null,
+            isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
+            onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
+            tokenSize: tokenSize,
+          ),
 
         // Active Game Status / Banner
         ListenableBuilder(
@@ -700,18 +966,33 @@ class _RekGameScreenState extends State<RekGameScreen> {
           ),
         ),
 
-        // Bottom Piece Selectors: Lime Green Plain & Crown (Plain highlighted by default!)
-        PieceSelectorBar(
-          player: PlayerColor.lime,
-          selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
-              ? _selectedPieceType
-              : null,
-          isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
-          onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
-          tokenSize: tokenSize,
-        ),
+        // BOTTOM: PlayerTimerCard in play mode, PieceSelectorBar in editor mode
+        if (_isPlaying)
+          ListenableBuilder(
+            listenable: UserService.instance,
+            builder: (context, _) => PlayerTimerCard(
+              player: PlayerColor.lime,
+              name: UserService.instance.username,
+              avatar: UserService.instance.avatar,
+              piecesCount: _limePiecesCount,
+              timeSeconds: _limeTimeSeconds,
+              isTurn: _currentTurn == PlayerColor.lime,
+              isUntimed: _timeLimitSeconds == 0,
+              onTimerTap: _showTimeControlPicker,
+            ),
+          )
+        else
+          PieceSelectorBar(
+            player: PlayerColor.lime,
+            selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
+                ? _selectedPieceType
+                : null,
+            isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
+            onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
+            tokenSize: tokenSize,
+          ),
 
-        // Bottom Menu: Yellow Back Arrow, Save, Play, White Chat Bubble
+        // Bottom Menu: Yellow Back Arrow, Save (only in editor mode), Play, White Chat Bubble
         BottomMenuBar(
           onBack: _onBack,
           onSave: _onSave,
@@ -720,6 +1001,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
           isPlaying: _isPlaying,
           labelSave: lang.save,
           labelPlay: lang.play,
+          showSave: !_isPlaying,
         ),
       ],
     );
@@ -768,14 +1050,18 @@ class _RekGameScreenState extends State<RekGameScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Menu Actions
-              _buildCompactBtn(lang.eraseAll, _onEraseAll, isDestructive: true),
-              const SizedBox(width: 6),
-              _buildCompactBtn(lang.erase, _onToggleErase, isActive: _isEraserActive),
-              const SizedBox(width: 6),
+              // Menu Actions (Erase all, Erase, and Save hidden during play mode)
+              if (!_isPlaying) ...[
+                _buildCompactBtn(lang.eraseAll, _onEraseAll, isDestructive: true),
+                const SizedBox(width: 6),
+                _buildCompactBtn(lang.erase, _onToggleErase, isActive: _isEraserActive),
+                const SizedBox(width: 6),
+              ],
               _buildCompactBtn(lang.rotateBoard, _onRotateBoard),
-              const SizedBox(width: 6),
-              _buildCompactBtn(lang.save, _onSave),
+              if (!_isPlaying) ...[
+                const SizedBox(width: 6),
+                _buildCompactBtn(lang.save, _onSave),
+              ],
               const SizedBox(width: 6),
               _buildCompactBtn(
                 lang.play,
@@ -797,59 +1083,92 @@ class _RekGameScreenState extends State<RekGameScreen> {
           ),
         ),
 
-        // Main Row: Left selectors, Center board, Right move log
+        // Main Row: Left selectors / Timers, Center board, Right move log
         Expanded(
           child: Row(
             children: [
-              // Left Panel: Piece Selectors
+              // Left Panel: Timers in play mode, Piece Selectors in editor mode
               Container(
-                width: 120,
+                width: 130,
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'TEAL',
-                        style: TextStyle(
-                          color: Color(0xFF80CBC4),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                  child: _isPlaying
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            PlayerTimerCard(
+                              player: PlayerColor.teal,
+                              name: _vsAi ? 'Teal AI' : (lang.isKhmer ? 'អ្នកលេងទី២' : 'Player 2'),
+                              avatar: _vsAi ? '🤖' : '👤',
+                              piecesCount: _tealPiecesCount,
+                              timeSeconds: _tealTimeSeconds,
+                              isTurn: _currentTurn == PlayerColor.teal,
+                              isAi: _vsAi,
+                              isUntimed: _timeLimitSeconds == 0,
+                              onTimerTap: _showTimeControlPicker,
+                              isCompact: true,
+                            ),
+                            const SizedBox(height: 10),
+                            ListenableBuilder(
+                              listenable: UserService.instance,
+                              builder: (context, _) => PlayerTimerCard(
+                                player: PlayerColor.lime,
+                                name: UserService.instance.username,
+                                avatar: UserService.instance.avatar,
+                                piecesCount: _limePiecesCount,
+                                timeSeconds: _limeTimeSeconds,
+                                isTurn: _currentTurn == PlayerColor.lime,
+                                isUntimed: _timeLimitSeconds == 0,
+                                onTimerTap: _showTimeControlPicker,
+                                isCompact: true,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'TEAL',
+                              style: TextStyle(
+                                color: Color(0xFF80CBC4),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            PieceSelectorBar(
+                              player: PlayerColor.teal,
+                              selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
+                                  ? _selectedPieceType
+                                  : null,
+                              isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
+                              onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
+                              isVertical: false,
+                              tokenSize: 32,
+                            ),
+                            const Divider(color: Colors.white12, height: 16),
+                            const Text(
+                              'LIME GREEN',
+                              style: TextStyle(
+                                color: Color(0xFFC5E1A5),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            PieceSelectorBar(
+                              player: PlayerColor.lime,
+                              selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
+                                  ? _selectedPieceType
+                                  : null,
+                              isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
+                              onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
+                              isVertical: false,
+                              tokenSize: 32,
+                            ),
+                          ],
                         ),
-                      ),
-                      PieceSelectorBar(
-                        player: PlayerColor.teal,
-                        selectedType: _selectedPlayer == PlayerColor.teal && !_isEraserActive
-                            ? _selectedPieceType
-                            : null,
-                        isSelectedPlayer: _selectedPlayer == PlayerColor.teal && !_isEraserActive,
-                        onSelect: (type) => _onSelectPiece(PlayerColor.teal, type),
-                        isVertical: false,
-                        tokenSize: 32,
-                      ),
-                      const Divider(color: Colors.white12, height: 16),
-                      const Text(
-                        'LIME GREEN',
-                        style: TextStyle(
-                          color: Color(0xFFC5E1A5),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      PieceSelectorBar(
-                        player: PlayerColor.lime,
-                        selectedType: _selectedPlayer == PlayerColor.lime && !_isEraserActive
-                            ? _selectedPieceType
-                            : null,
-                        isSelectedPlayer: _selectedPlayer == PlayerColor.lime && !_isEraserActive,
-                        onSelect: (type) => _onSelectPiece(PlayerColor.lime, type),
-                        isVertical: false,
-                        tokenSize: 32,
-                      ),
-                    ],
-                  ),
                 ),
               ),
 

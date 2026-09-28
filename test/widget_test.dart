@@ -300,4 +300,76 @@ void main() {
     expect(find.text('1. Board & Objective'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Rules & Guide'), findsOneWidget);
   });
+
+  testWidgets('Play vs AI mode removes Erase all, Erase, and Save buttons, and displays player timers', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Tap "Play vs AI"
+    await tester.tap(find.text('Play vs AI'));
+    await tester.pumpAndSettle();
+
+    // 2. Tap "Start Match" on difficulty modal
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // 3. Verify Erase all, Erase, and Save buttons are NOT present in Play vs AI
+    expect(find.text('Erase all'), findsNothing);
+    expect(find.text('Erase'), findsNothing);
+    expect(find.text('Save'), findsNothing);
+
+    // 4. Verify Rotate Baord, Play, Back arrow, and Wi-Fi ARE present
+    expect(find.text('Rotate Baord'), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+
+    // 5. Verify Player Timer Cards are displayed for both Teal AI and Lime Player
+    expect(find.text('05:00'), findsNWidgets(2));
+    expect(find.text('16 pieces'), findsNWidgets(2));
+
+    // 6. Verify timer ticks down for Lime player whose turn it is
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('04:58'), findsOneWidget);
+    expect(find.text('05:00'), findsOneWidget);
+
+    // Return to home
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Pass & Play (2 Players) mode removes Erase all, Erase, and Save buttons, and displays player timers', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Tap "Pass & Play (2 Players)"
+    await tester.tap(find.text('Pass & Play (2 Players)'));
+    await tester.pumpAndSettle();
+
+    // 2. Verify Erase all, Erase, and Save buttons are NOT present
+    expect(find.text('Erase all'), findsNothing);
+    expect(find.text('Erase'), findsNothing);
+    expect(find.text('Save'), findsNothing);
+
+    // 3. Verify Rotate Baord, Play, Back arrow ARE present
+    expect(find.text('Rotate Baord'), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
+
+    // 4. Verify Player Timers are displayed
+    expect(find.text('05:00'), findsNWidgets(2));
+    expect(find.text('16 pieces'), findsNWidgets(2));
+
+    // Return to home
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+  });
 }

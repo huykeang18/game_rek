@@ -2,22 +2,24 @@ import 'package:flutter/material.dart';
 
 class BottomMenuBar extends StatelessWidget {
   final VoidCallback onBack;
-  final VoidCallback onSave;
+  final VoidCallback? onSave;
   final VoidCallback onPlay;
   final VoidCallback onChat;
   final bool isPlaying;
   final String labelSave;
   final String labelPlay;
+  final bool showSave;
 
   const BottomMenuBar({
     super.key,
     required this.onBack,
-    required this.onSave,
+    this.onSave,
     required this.onPlay,
     required this.onChat,
     this.isPlaying = false,
     this.labelSave = 'Save',
     this.labelPlay = 'Play',
+    this.showSave = true,
   });
 
   @override
@@ -58,16 +60,18 @@ class BottomMenuBar extends StatelessWidget {
 
               const SizedBox(width: 16),
 
-              // Center Buttons: "Save" and "Play"
+              // Center Buttons: "Save" (if showSave) and "Play"
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildBottomButton(
-                    label: labelSave,
-                    onTap: onSave,
-                    backgroundColor: const Color(0xFF37474F),
-                  ),
-                  const SizedBox(width: 10),
+                  if (showSave && onSave != null) ...[
+                    _buildBottomButton(
+                      label: labelSave,
+                      onTap: onSave!,
+                      backgroundColor: const Color(0xFF37474F),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   _buildBottomButton(
                     label: labelPlay,
                     onTap: onPlay,
