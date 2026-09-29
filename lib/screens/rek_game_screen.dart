@@ -20,6 +20,7 @@ import '../widgets/profile_edit_dialog.dart';
 import '../widgets/settings_dialog.dart';
 import '../widgets/language_button.dart';
 import '../widgets/player_timer_card.dart';
+import 'home_screen.dart';
 
 class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
@@ -555,7 +556,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         } else {
-          setState(() => _isPlaying = false);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
         }
       }
       return;
@@ -916,6 +919,18 @@ class _RekGameScreenState extends State<RekGameScreen> {
     }
   }
 
+  void _returnToHome() {
+    AudioService.instance.playClick();
+    setState(() => _isExiting = true);
+    final nav = Navigator.of(context);
+    nav.popUntil((route) => route.isFirst);
+    if (mounted) {
+      nav.pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
+  }
+
   void _showGameOverDialog(GameOverResult result) {
     final lang = LanguageService.instance;
     final isPlayerWinner = result.winner == PlayerColor.lime;
@@ -936,12 +951,17 @@ class _RekGameScreenState extends State<RekGameScreen> {
           children: [
             const Icon(Icons.emoji_events, color: Color(0xFFFFD54F), size: 28),
             const SizedBox(width: 8),
-            Flexible(
+            Expanded(
               child: Text(
                 lang.wins(winnerName),
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white70),
+              tooltip: lang.close,
+              onPressed: () => _returnToHome(),
             ),
           ],
         ),
@@ -1008,11 +1028,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              AudioService.instance.playClick();
-              Navigator.pop(context);
-              setState(() => _isPlaying = false);
-            },
+            onPressed: () => _returnToHome(),
             child: Text(lang.close, style: const TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(

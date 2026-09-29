@@ -50,10 +50,12 @@ class WoodBoard extends StatelessWidget {
                 turns: isRotated ? 0.5 : 0.0,
                 curve: Curves.easeInOutCubic,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: List.generate(8, (displayRow) {
                     final actualRow = displayRow;
                     return Expanded(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: List.generate(8, (displayCol) {
                           final actualCol = displayCol;
                           return Expanded(
@@ -91,83 +93,123 @@ class WoodBoard extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.04);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => onSquareTap(row, col),
-      child: Container(
-        decoration: BoxDecoration(
-          color: squareColor,
-          border: Border.all(
-            color: const Color(0x334E342E),
-            width: 0.6,
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Last move highlight
-            if (isLastMove)
-              Container(
-                color: const Color(0x33FFF59D),
+    return MouseRegion(
+      cursor: (isLegalMove || piece != null)
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onSquareTap(row, col),
+        child: SizedBox.expand(
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: squareColor,
+              border: Border.all(
+                color: const Color(0x334E342E),
+                width: 0.6,
               ),
-
-            // Selected square highlight
-            if (isSelected)
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: const Color(0xFFFFD54F),
-                    width: 2.5,
-                  ),
-                  color: const Color(0x33FFD54F),
-                ),
-              ),
-
-            // Legal move indicator
-            if (isLegalMove)
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: piece == null
-                      ? const Color(0xAA4CAF50)
-                      : const Color(0xCCE53935),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 4,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 1. Last move highlight across whole box
+                if (isLastMove)
+                  Positioned.fill(
+                    child: Container(
+                      color: const Color(0x33FFF59D),
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-            // Recent capture flash
-            if (isCaptured)
-              Container(
-                color: const Color(0x66FF1744),
-              ),
+                // 2. Selected square highlight across whole box
+                if (isSelected)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFFFD54F),
+                          width: 2.5,
+                        ),
+                        color: const Color(0x33FFD54F),
+                      ),
+                    ),
+                  ),
 
-            // Piece Token
-            if (piece != null)
-              AnimatedRotation(
-                // Counter-rotate the token so it remains upright when board is rotated
-                duration: const Duration(milliseconds: 350),
-                turns: isRotated ? -0.5 : 0.0,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final tokenSize = math.min(constraints.maxWidth, constraints.maxHeight) * 0.84;
-                    return PieceTokenWidget(
-                      player: piece.player,
-                      type: piece.type,
-                      size: tokenSize,
-                      isSelected: isSelected,
-                    );
-                  },
-                ),
-              ),
-          ],
+                // 3. Legal move highlight across WHOLE BOX
+                if (isLegalMove)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: piece == null
+                            ? const Color(0x2E4CAF50)
+                            : const Color(0x35E53935),
+                        border: Border.all(
+                          color: piece == null
+                              ? const Color(0x8881C784)
+                              : const Color(0xCCE53935),
+                          width: piece == null ? 1.5 : 2.0,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 4. Center indicator for legal move
+                if (isLegalMove)
+                  Center(
+                    child: Container(
+                      width: piece == null ? 16 : 22,
+                      height: piece == null ? 16 : 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: piece == null
+                            ? const Color(0xDD4CAF50)
+                            : const Color(0xCCE53935),
+                        border: Border.all(color: Colors.white, width: 2.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: piece != null
+                          ? const Icon(Icons.close, color: Colors.white, size: 14)
+                          : null,
+                    ),
+                  ),
+
+                // 5. Recent capture flash across whole box
+                if (isCaptured)
+                  Positioned.fill(
+                    child: Container(
+                      color: const Color(0x66FF1744),
+                    ),
+                  ),
+
+                // 6. Piece Token
+                if (piece != null)
+                  Center(
+                    child: AnimatedRotation(
+                      // Counter-rotate the token so it remains upright when board is rotated
+                      duration: const Duration(milliseconds: 350),
+                      turns: isRotated ? -0.5 : 0.0,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final tokenSize = math.min(constraints.maxWidth, constraints.maxHeight) * 0.84;
+                          return PieceTokenWidget(
+                            player: piece.player,
+                            type: piece.type,
+                            size: tokenSize,
+                            isSelected: isSelected,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

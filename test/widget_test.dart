@@ -6,6 +6,10 @@ import 'package:game_rek/models/rek_piece.dart';
 import 'package:game_rek/services/user_service.dart';
 import 'package:game_rek/services/language_service.dart';
 import 'package:game_rek/services/audio_service.dart';
+import 'package:game_rek/screens/home_screen.dart';
+import 'package:game_rek/screens/rek_game_screen.dart';
+import 'package:game_rek/logic/storage_service.dart';
+import 'package:game_rek/widgets/wood_board.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -654,6 +658,126 @@ void main() {
 
     // Back on HomeScreen
     expect(find.text('GAME REK'), findsOneWidget);
+  });
+
+  testWidgets('In game, when game over alert appears, clicking Close returns to home page to start again', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    // Prepare a board state where Lime can win on move 1 via Rek capture
+    // (0, 0) Teal King, (0, 2) Teal piece, (1, 1) Lime piece, (7, 0) Lime King
+    final winningBoard = List.generate(8, (_) => List<RekPiece?>.filled(8, null));
+    winningBoard[7][0] = const RekPiece(id: 'l_k', player: PlayerColor.lime, type: PieceType.crowned);
+    winningBoard[1][1] = const RekPiece(id: 'l_p1', player: PlayerColor.lime, type: PieceType.plain);
+    winningBoard[0][0] = const RekPiece(id: 't_k', player: PlayerColor.teal, type: PieceType.crowned);
+    winningBoard[0][2] = const RekPiece(id: 't_p1', player: PlayerColor.teal, type: PieceType.plain);
+
+    final state = SavedGameState(
+      id: 'test_win',
+      name: 'Test Win',
+      timestamp: DateTime.now(),
+      board: winningBoard,
+      currentTurn: PlayerColor.lime,
+      isPlayMode: true,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomeScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify on HomeScreen
+    expect(find.text('GAME REK'), findsOneWidget);
+
+    // Push RekGameScreen with the near-win setup
+    final BuildContext homeContext = tester.element(find.text('GAME REK'));
+    Navigator.of(homeContext).push(
+      MaterialPageRoute(
+        builder: (_) => RekGameScreen(
+          startInPlayMode: true,
+          vsAi: false,
+          initialSavedState: state,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Find squares in the WoodBoard
+    final boardSquares = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(GestureDetector),
+    );
+
+    // Tap piece at (1, 1) -> index 1 * 8 + 1 = 9
+    await tester.tap(boardSquares.at(9));
+    await tester.pumpAndSettle();
+
+    // Tap destination at (0, 1) -> index 0 * 8 + 1 = 1
+    // This places Lime at (0, 1) between (0, 0) Teal and (0, 2) Teal!
+    await tester.tap(boardSquares.at(1));
+    await tester.pumpAndSettle();
+
+    // Verify Game Over alert dialog is visible
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
+    expect(find.text('Play Again'), findsOneWidget);
+
+    // Tap "Close" on the alert dialog
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    // Verify we are back on the HomeScreen to start again
+    expect(find.text('GAME REK'), findsOneWidget);
+    expect(find.text('Play vs AI'), findsOneWidget);
+    expect(find.text('Pass & Play (2 Players)'), findsOneWidget);
+  });
+
+  testWidgets('User can tap anywhere in the whole box (corners/edges, not just center) to place piece and move', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomeScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Start a Pass & Play match
+    await tester.tap(find.text('Pass & Play (2 Players)'));
+    await tester.pumpAndSettle();
+
+    // Start match from timer modal
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    final boardSquares = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(GestureDetector),
+    );
+
+    // Initial Lime pieces are at row 5 (cols 0..7) -> index 5*8 + 0 = 40
+    // Tap Lime piece at (5, 0)
+    await tester.tap(boardSquares.at(40));
+    await tester.pumpAndSettle();
+
+    // Destination (4, 0) -> index 4*8 + 0 = 32 is a legal move
+    // Tap specifically at the top-left edge/corner of square (4, 0), NOT the center green point!
+    final topLeftCorner = tester.getTopLeft(boardSquares.at(32)) + const Offset(3.0, 3.0);
+    await tester.tapAt(topLeftCorner);
+    await tester.pumpAndSettle();
+
+    // Verify move succeeded: piece is now moved to square (4, 0)
+    // and it is now Player 2 (Teal)'s turn
+    expect(find.textContaining('Player 2'), findsWidgets);
   });
 }
 
