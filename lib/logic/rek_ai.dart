@@ -12,22 +12,26 @@ enum AiDifficulty {
 class RekAi {
   final PlayerColor aiPlayer;
   final AiDifficulty difficulty;
+  final RekRuleMode ruleMode;
   final Random _rng = Random();
 
   RekAi({
     required this.aiPlayer,
     this.difficulty = AiDifficulty.medium,
+    this.ruleMode = RekRuleMode.hao,
   });
 
   PlayerColor get opponent =>
       aiPlayer == PlayerColor.teal ? PlayerColor.lime : PlayerColor.teal;
 
-  /// Selects the best move according to the AI's difficulty
-  RekMove? selectMove(List<List<RekPiece?>> board) {
-    final moves = RekRules.getAllMoves(board, aiPlayer);
+  /// Selects the best move according to the AI's difficulty.
+  /// If [isCallActive] is true (opponent clicked the Call button), the AI is strictly forced to capture.
+  /// If [isCallActive] is false, the AI can decide whether it wants to Rek or make another move.
+  RekMove? selectMove(List<List<RekPiece?>> board, {bool isCallActive = false}) {
+    final moves = RekRules.getAllValidMoves(board, aiPlayer, ruleMode: ruleMode, isCallActive: isCallActive);
     if (moves.isEmpty) return null;
 
-    // 1. If any move captures the enemy King, take it immediately!
+    // 1. If any move captures the enemy "Me" (King), take it immediately!
     for (final move in moves) {
       if (move.capturedKing) return move;
     }
@@ -36,7 +40,7 @@ class RekAi {
       case AiDifficulty.easy:
         // Prioritize any capture, else random
         final captureMoves = moves.where((m) => m.hasCapture).toList();
-        if (captureMoves.isNotEmpty && _rng.nextDouble() < 0.7) {
+        if (captureMoves.isNotEmpty) {
           return captureMoves[_rng.nextInt(captureMoves.length)];
         }
         return moves[_rng.nextInt(moves.length)];
@@ -76,10 +80,8 @@ class RekAi {
     double alpha,
     double beta,
   ) {
-    final gameOver = RekRules.checkGameOver(
-      board,
-      isMaximizing ? aiPlayer : opponent,
-    );
+    final player = isMaximizing ? aiPlayer : opponent;
+    final gameOver = RekRules.checkGameOver(board, player);
     if (gameOver != null) {
       if (gameOver.winner == aiPlayer) return 10000.0 + depth;
       return -10000.0 - depth;
@@ -91,7 +93,7 @@ class RekAi {
 
     if (isMaximizing) {
       double maxEval = -999999.0;
-      final moves = RekRules.getAllMoves(board, aiPlayer);
+      final moves = RekRules.getAllValidMoves(board, aiPlayer, ruleMode: ruleMode);
       if (moves.isEmpty) return -10000.0;
 
       for (final m in moves) {
@@ -106,7 +108,7 @@ class RekAi {
       return maxEval;
     } else {
       double minEval = 999999.0;
-      final moves = RekRules.getAllMoves(board, opponent);
+      final moves = RekRules.getAllValidMoves(board, opponent, ruleMode: ruleMode);
       if (moves.isEmpty) return 10000.0;
 
       for (final m in moves) {
@@ -126,8 +128,7 @@ class RekAi {
     double score = 0;
 
     if (move.capturedKing) score += 5000;
-    score += move.rekCaptures.length * 150;
-    score += move.surroundCaptures.length * 100;
+    score += move.totalCaptures * 200;
 
     // Moving King into center is risky in Rek
     if (move.piece.isCrowned) {

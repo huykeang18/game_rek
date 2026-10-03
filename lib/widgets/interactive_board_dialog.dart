@@ -8,10 +8,12 @@ import 'wood_board.dart';
 
 class InteractiveBoardDialog extends StatefulWidget {
   final VoidCallback onStartMatch;
+  final RekRuleMode initialRuleMode;
 
   const InteractiveBoardDialog({
     super.key,
     required this.onStartMatch,
+    this.initialRuleMode = RekRuleMode.hao,
   });
 
   @override
@@ -20,6 +22,7 @@ class InteractiveBoardDialog extends StatefulWidget {
 
 class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
   late List<List<RekPiece?>> _board;
+  late RekRuleMode _ruleMode;
   BoardPosition? _selectedSquare;
   List<BoardPosition> _legalMoves = [];
   List<BoardPosition> _lastMoveFromTo = [];
@@ -31,6 +34,7 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
   @override
   void initState() {
     super.initState();
+    _ruleMode = widget.initialRuleMode;
     _resetBoard();
   }
 
@@ -52,9 +56,15 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
 
     setState(() {
       if (_selectedSquare == null) {
-        if (piece != null) {
+        if (piece != null && piece.player == _currentTurn) {
+          final isHao = RekRules.isHaoActive(_board, _currentTurn, ruleMode: _ruleMode);
+          final validMoves = RekRules.getValidMovesForPiece(_board, pos, ruleMode: _ruleMode);
+          if (isHao && validMoves.isEmpty) {
+            AudioService.instance.playInvalid();
+            return;
+          }
           _selectedSquare = pos;
-          _legalMoves = RekRules.getLegalMoves(_board, pos);
+          _legalMoves = validMoves;
           AudioService.instance.playClick();
           HapticFeedback.selectionClick();
         }
@@ -65,8 +75,14 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
           _legalMoves = [];
         } else if (piece != null && piece.player == _board[_selectedSquare!.row][_selectedSquare!.col]?.player) {
           // Switch selection to another piece of the same player
+          final isHao = RekRules.isHaoActive(_board, _currentTurn, ruleMode: _ruleMode);
+          final validMoves = RekRules.getValidMovesForPiece(_board, pos, ruleMode: _ruleMode);
+          if (isHao && validMoves.isEmpty) {
+            AudioService.instance.playInvalid();
+            return;
+          }
           _selectedSquare = pos;
-          _legalMoves = RekRules.getLegalMoves(_board, pos);
+          _legalMoves = validMoves;
           AudioService.instance.playClick();
           HapticFeedback.selectionClick();
         } else if (_legalMoves.contains(pos)) {
@@ -225,6 +241,71 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
                           ),
                         ),
                       ],
+                    ),
+                    // Rule Mode Toggle (Rek vs Hao)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white24, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              AudioService.instance.playClick();
+                              setState(() {
+                                _ruleMode = RekRuleMode.rek;
+                                _selectedSquare = null;
+                                _legalMoves = [];
+                              });
+                            },
+                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _ruleMode == RekRuleMode.rek ? const Color(0xFF2E7D32) : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
+                              ),
+                              child: Text(
+                                'Rek',
+                                style: TextStyle(
+                                  color: _ruleMode == RekRuleMode.rek ? Colors.white : Colors.white60,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              AudioService.instance.playClick();
+                              setState(() {
+                                _ruleMode = RekRuleMode.hao;
+                                _selectedSquare = null;
+                                _legalMoves = [];
+                              });
+                            },
+                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _ruleMode == RekRuleMode.hao ? const Color(0xFFE65100) : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
+                              ),
+                              child: Text(
+                                'Call',
+                                style: TextStyle(
+                                  color: _ruleMode == RekRuleMode.hao ? Colors.white : Colors.white60,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Text(
                       'Moves: $_moveCount',

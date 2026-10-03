@@ -112,6 +112,28 @@ class LanguageService extends ChangeNotifier {
   String get hardDifficultyDesc => isKhmer
       ? 'គិតស៊ីជម្រៅដោយ Minimax និង Alpha-Beta'
       : 'Deep 2-ply minimax search with alpha-beta pruning';
+  // Play Options (Rek vs Call)
+  String get selectGameMode => isKhmer ? 'ជ្រើសរើសរបៀបលេង' : 'Select Play Option';
+  String get modeRekTitle => isKhmer ? 'រែក (Rek)' : 'Rek';
+  String get modeRekSubtitle => isKhmer ? 'ស៊ីធម្មតា (មិនបង្ខំ)' : 'Optional capture';
+  String get modeRekDesc => isKhmer
+      ? 'ស៊ីរែកធម្មតា (មិនបង្ខំស៊ី) - អ្នកលេងមានសេរីភាពដើរកូនអុកណាក៏បាន'
+      : 'Standard Rek: Capturing is optional. Free to move any piece.';
+  String get modeCallTitle => isKhmer ? 'ហៅ (Call)' : 'Call';
+  String get modeCallSubtitle => isKhmer ? 'បង្ខំស៊ី (ដាច់ខាត)' : 'Mandatory capture';
+  String get modeCallDesc => isKhmer
+      ? 'ច្បាប់ហៅ (បង្ខំស៊ី) - បើគូប្រកួតបើកផ្លូវស៊ី ត្រូវតែស៊ីដាច់ខាត'
+      : 'Strict Call: Capturing is mandatory when an opening or trap exists.';
+  String get ruleModeBadgeRek => isKhmer ? '🎯 រែក' : '🎯 Rek';
+  String get ruleModeBadgeCall => isKhmer ? '⚡ ហៅ' : '⚡ Call';
+
+  // Compatibility aliases
+  String get modeHaoTitle => modeCallTitle;
+  String get modeHaoSubtitle => modeCallSubtitle;
+  String get modeHaoDesc => modeCallDesc;
+  String get ruleModeBadgeHao => ruleModeBadgeCall;
+  String get gameModeLabel => isKhmer ? 'របៀបលេង' : 'Play Mode';
+
   String get startMatch => isKhmer ? 'ចាប់ផ្តើមលេង' : 'Start Match';
 
   // Top Menu Buttons (preserving exact requested English spelling)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/rek_piece.dart';
+import '../logic/rek_rules.dart';
 import '../logic/rek_ai.dart';
 import '../logic/storage_service.dart';
 import '../services/audio_service.dart';
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   AiDifficulty _selectedDifficulty = AiDifficulty.medium;
+  RekRuleMode _selectedRuleMode = RekRuleMode.hao;
   int _selectedTimerSeconds = 300;
 
   @override
@@ -81,9 +83,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     showDialog(
       context: context,
       builder: (_) => InteractiveBoardDialog(
-        onStartMatch: () => _navigateToGame(
+        initialRuleMode: _selectedRuleMode,
+        onStartMatch: ([RekRuleMode? mode]) => _navigateToGame(
           startInPlayMode: true,
           vsAi: true,
+          ruleMode: mode ?? _selectedRuleMode,
           timeLimitSeconds: _selectedTimerSeconds,
         ),
       ),
@@ -94,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     bool startInPlayMode = false,
     bool vsAi = true,
     int timeLimitSeconds = 300,
+    RekRuleMode? ruleMode,
     SavedGameState? initialSavedState,
   }) {
     AudioService.instance.playClick();
@@ -104,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           startInPlayMode: startInPlayMode,
           vsAi: vsAi,
           aiDifficulty: _selectedDifficulty,
+          ruleMode: ruleMode ?? _selectedRuleMode,
           initialSavedState: initialSavedState,
           initialTimeLimitSeconds: timeLimitSeconds,
         ),
@@ -170,10 +176,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   lang.hardDifficultyDesc,
                 ),
                 const SizedBox(height: 16),
+                _buildRuleModeSelector(
+                  setModalState,
+                  _selectedRuleMode,
+                  (mode) {
+                    setModalState(() => _selectedRuleMode = mode);
+                    setState(() => _selectedRuleMode = mode);
+                  },
+                  lang,
+                ),
+                const SizedBox(height: 16),
                 _buildTimerSelector(
                   setModalState,
                   _selectedTimerSeconds,
                   (sec) {
+                    setModalState(() => _selectedTimerSeconds = sec);
                     setState(() => _selectedTimerSeconds = sec);
                   },
                   lang,
@@ -192,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       _navigateToGame(
                         startInPlayMode: true,
                         vsAi: true,
+                        ruleMode: _selectedRuleMode,
                         timeLimitSeconds: _selectedTimerSeconds,
                       );
                     },
@@ -259,11 +277,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
+                _buildRuleModeSelector(
+                  setModalState,
+                  _selectedRuleMode,
+                  (mode) {
+                    setModalState(() => _selectedRuleMode = mode);
+                    setState(() => _selectedRuleMode = mode);
+                  },
+                  lang,
+                ),
+                const SizedBox(height: 16),
                 _buildTimerSelector(
                   setModalState,
                   _selectedTimerSeconds,
                   (sec) {
+                    setModalState(() => _selectedTimerSeconds = sec);
                     setState(() => _selectedTimerSeconds = sec);
                   },
                   lang,
@@ -282,6 +311,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       _navigateToGame(
                         startInPlayMode: true,
                         vsAi: false,
+                        ruleMode: _selectedRuleMode,
                         timeLimitSeconds: _selectedTimerSeconds,
                       );
                     },
@@ -296,6 +326,169 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRuleModeSelector(
+    StateSetter setModalState,
+    RekRuleMode selectedMode,
+    ValueChanged<RekRuleMode> onChanged,
+    LanguageService lang,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.rule_folder_outlined, size: 16, color: Color(0xFFFFD54F)),
+            const SizedBox(width: 6),
+            Text(
+              lang.selectGameMode,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            // Option 1: Rek Mode
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  AudioService.instance.playClick();
+                  setModalState(() => onChanged(RekRuleMode.rek));
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: selectedMode == RekRuleMode.rek
+                        ? const Color(0xFF2E7D32).withValues(alpha: 0.35)
+                        : const Color(0xFF1E272C),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selectedMode == RekRuleMode.rek
+                          ? const Color(0xFF81C784)
+                          : Colors.white12,
+                      width: selectedMode == RekRuleMode.rek ? 1.8 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.sports_kabaddi,
+                            size: 16,
+                            color: selectedMode == RekRuleMode.rek
+                                ? const Color(0xFF81C784)
+                                : Colors.white60,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              lang.modeRekTitle,
+                              style: TextStyle(
+                                color: selectedMode == RekRuleMode.rek
+                                    ? const Color(0xFF81C784)
+                                    : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (selectedMode == RekRuleMode.rek)
+                            const Icon(Icons.check_circle, size: 15, color: Color(0xFF81C784)),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        lang.modeRekSubtitle,
+                        style: TextStyle(
+                          color: selectedMode == RekRuleMode.rek ? Colors.white70 : Colors.white38,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Option 2: Hao Mode
+            Expanded(
+              child: InkWell(
+                onTap: () {
+                  AudioService.instance.playClick();
+                  setModalState(() => onChanged(RekRuleMode.hao));
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: selectedMode == RekRuleMode.hao
+                        ? const Color(0xFFE65100).withValues(alpha: 0.35)
+                        : const Color(0xFF1E272C),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: selectedMode == RekRuleMode.hao
+                          ? const Color(0xFFFFB74D)
+                          : Colors.white12,
+                      width: selectedMode == RekRuleMode.hao ? 1.8 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.bolt,
+                            size: 16,
+                            color: selectedMode == RekRuleMode.hao
+                                ? const Color(0xFFFFB74D)
+                                : Colors.white60,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              lang.modeHaoTitle,
+                              style: TextStyle(
+                                color: selectedMode == RekRuleMode.hao
+                                    ? const Color(0xFFFFB74D)
+                                    : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (selectedMode == RekRuleMode.hao)
+                            const Icon(Icons.check_circle, size: 15, color: Color(0xFFFFB74D)),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        lang.modeHaoSubtitle,
+                        style: TextStyle(
+                          color: selectedMode == RekRuleMode.hao ? Colors.white70 : Colors.white38,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

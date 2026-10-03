@@ -13,6 +13,9 @@ class GameStatusBanner extends StatelessWidget {
   final String? playerName;
   final String? playerAvatar;
   final bool vsAi;
+  final RekRuleMode ruleMode;
+  final VoidCallback? onCall;
+  final bool isCallActive;
 
   const GameStatusBanner({
     super.key,
@@ -25,6 +28,9 @@ class GameStatusBanner extends StatelessWidget {
     this.playerName,
     this.playerAvatar,
     this.vsAi = true,
+    this.ruleMode = RekRuleMode.hao,
+    this.onCall,
+    this.isCallActive = false,
   });
 
   @override
@@ -86,8 +92,10 @@ class GameStatusBanner extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
+              Flexible(
+                flex: lastNotification != null ? 2 : 1,
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       width: 12,
@@ -119,18 +127,100 @@ class GameStatusBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              if (lastNotification != null)
-                Text(
-                  lastNotification!,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD54F),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12.5,
-                  ),
-                ),
-            ],
-          ),
-        );
+              const SizedBox(width: 6),
+              Flexible(
+                flex: lastNotification != null ? 3 : 0,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (lastNotification != null) ...[
+                      Flexible(
+                        child: Text(
+                          lastNotification!,
+                          style: const TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    if (lastNotification == null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: ruleMode == RekRuleMode.hao ? const Color(0xFFFFD54F) : const Color(0xFF81C784),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        ruleMode == RekRuleMode.hao ? lang.ruleModeBadgeHao : lang.ruleModeBadgeRek,
+                        style: TextStyle(
+                          color: ruleMode == RekRuleMode.hao ? const Color(0xFFFFD54F) : const Color(0xFF81C784),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  if (ruleMode == RekRuleMode.hao && onCall != null) ...[
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onCall,
+                        borderRadius: BorderRadius.circular(6),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isCallActive
+                                  ? const [Color(0xFFFF3D00), Color(0xFFFF9100)]
+                                  : const [Color(0xFFE65100), Color(0xFFFF8F00)],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isCallActive ? const Color(0xFFFFD54F) : const Color(0xFFFFB74D),
+                              width: isCallActive ? 1.8 : 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF8F00).withValues(alpha: isCallActive ? 0.6 : 0.35),
+                                blurRadius: isCallActive ? 6 : 3,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.bolt, color: Colors.white, size: 13),
+                              const SizedBox(width: 3),
+                              Text(
+                                lang.isKhmer ? 'ហៅ (Call)' : 'Call',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
       },
     );
   }

@@ -13,6 +13,9 @@ class PlayerTimerCard extends StatelessWidget {
   final bool isUntimed;
   final VoidCallback? onTimerTap;
   final bool isCompact;
+  final VoidCallback? onCall;
+  final bool showCallButton;
+  final bool isCallActive;
 
   const PlayerTimerCard({
     super.key,
@@ -26,6 +29,9 @@ class PlayerTimerCard extends StatelessWidget {
     this.isUntimed = false,
     this.onTimerTap,
     this.isCompact = false,
+    this.onCall,
+    this.showCallButton = false,
+    this.isCallActive = false,
   });
 
   String get formattedTime {
@@ -98,12 +104,16 @@ class PlayerTimerCard extends StatelessWidget {
               '$piecesCount ${lang.piecesWord}',
               style: const TextStyle(color: Colors.white54, fontSize: 10),
             ),
-            const SizedBox(height: 6),
+            if (showCallButton && onCall != null) ...[
+              const SizedBox(height: 5),
+              _buildCallButton(lang),
+            ],
+            const SizedBox(height: 5),
             InkWell(
               onTap: onTimerTap,
               borderRadius: BorderRadius.circular(6),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(6),
@@ -115,31 +125,34 @@ class PlayerTimerCard extends StatelessWidget {
                         : Colors.white24,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 12,
-                      color: isTurn
-                          ? (isCriticalTime
-                              ? Colors.redAccent
-                              : (isLowTime ? Colors.orangeAccent : primaryColor))
-                          : Colors.white54,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      formattedTime,
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        color: isCriticalTime
-                            ? Colors.redAccent
-                            : (isLowTime ? Colors.orangeAccent : (isTurn ? Colors.white : Colors.white70)),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: 12,
+                        color: isTurn
+                            ? (isCriticalTime
+                                ? Colors.redAccent
+                                : (isLowTime ? Colors.orangeAccent : primaryColor))
+                            : Colors.white54,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        formattedTime,
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          color: isCriticalTime
+                              ? Colors.redAccent
+                              : (isLowTime ? Colors.orangeAccent : (isTurn ? Colors.white : Colors.white70)),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -266,6 +279,12 @@ class PlayerTimerCard extends StatelessWidget {
             ),
           ),
 
+          // Call Button (when in Call/Hao mode)
+          if (showCallButton && onCall != null) ...[
+            _buildCallButton(lang),
+            const SizedBox(width: 8),
+          ],
+
           // Player Digital Timer Box
           InkWell(
             onTap: onTimerTap,
@@ -314,6 +333,57 @@ class PlayerTimerCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCallButton(LanguageService lang) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onCall,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isCallActive
+                  ? const [Color(0xFFFF3D00), Color(0xFFFF9100)]
+                  : const [Color(0xFFE65100), Color(0xFFFF8F00)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isCallActive ? const Color(0xFFFFD54F) : const Color(0xFFFFB74D),
+              width: isCallActive ? 1.8 : 1.1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF8F00).withValues(alpha: isCallActive ? 0.6 : 0.35),
+                blurRadius: isCallActive ? 8 : 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.bolt,
+                color: Colors.white,
+                size: 14,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                lang.isKhmer ? 'ហៅ (Call)' : 'Call',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11.5,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

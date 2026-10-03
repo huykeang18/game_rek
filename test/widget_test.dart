@@ -13,8 +13,11 @@ import 'package:game_rek/widgets/wood_board.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+    await UserService.instance.setUsername('RekMaster');
+    await UserService.instance.resetPoints();
   });
 
   testWidgets('Rek app home page and navigation to game editor test', (WidgetTester tester) async {
@@ -37,7 +40,7 @@ void main() {
     expect(find.text('Erase all'), findsOneWidget);
     expect(find.text('Erase'), findsOneWidget);
     expect(find.text('Rotate Baord'), findsOneWidget);
-    expect(find.byIcon(Icons.wifi), findsOneWidget);
+    expect(find.byIcon(Icons.wifi), findsNothing);
 
     // 4. Verify Bottom Menu elements on game screen
     expect(find.text('Save'), findsOneWidget);
@@ -83,7 +86,7 @@ void main() {
 
       // Verify essential game elements render with zero exceptions on this screen size
       expect(find.text('Rotate Baord'), findsOneWidget);
-      expect(find.byIcon(Icons.wifi), findsOneWidget);
+      expect(find.byIcon(Icons.wifi), findsNothing);
 
       // Return to home
       await tester.tap(find.byIcon(Icons.arrow_back));
@@ -139,7 +142,44 @@ void main() {
     expect(board[7][0], isNull);
   });
 
-  test('Rek capture sandwich mechanic test', () {
+  test('General Movement Rules: pieces move in straight lines (+ shape) until obstruction like a Rook, no diagonals', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // 1. On an open board, place a piece at (3, 3)
+    board[3][3] = const RekPiece(id: 'p1', player: PlayerColor.lime, type: PieceType.plain);
+
+    final openMoves = RekRules.getLegalMoves(board, const BoardPosition(3, 3));
+
+    // Can slide horizontally across row 3 (cols 0, 1, 2, 4, 5, 6, 7 -> 7 moves)
+    // and vertically across col 3 (rows 0, 1, 2, 4, 5, 6, 7 -> 7 moves) = 14 total
+    expect(openMoves.length, 14);
+
+    // Check sliding far destinations
+    expect(openMoves.contains(const BoardPosition(0, 3)), isTrue); // far up
+    expect(openMoves.contains(const BoardPosition(7, 3)), isTrue); // far down
+    expect(openMoves.contains(const BoardPosition(3, 0)), isTrue); // far left
+    expect(openMoves.contains(const BoardPosition(3, 7)), isTrue); // far right
+
+    // Cannot move diagonally
+    expect(openMoves.contains(const BoardPosition(2, 2)), isFalse);
+    expect(openMoves.contains(const BoardPosition(4, 4)), isFalse);
+    expect(openMoves.contains(const BoardPosition(0, 0)), isFalse);
+
+    // 2. Test obstruction: place an obstacle at (1, 3)
+    board[1][3] = const RekPiece(id: 'obstacle', player: PlayerColor.teal, type: PieceType.plain);
+
+    final obstructedMoves = RekRules.getLegalMoves(board, const BoardPosition(3, 3));
+
+    // Can move to (2, 3), but cannot reach (1, 3) or jump past to (0, 3)
+    expect(obstructedMoves.contains(const BoardPosition(2, 3)), isTrue);
+    expect(obstructedMoves.contains(const BoardPosition(1, 3)), isFalse); // obstructed
+    expect(obstructedMoves.contains(const BoardPosition(0, 3)), isFalse); // blocked behind obstacle
+  });
+
+  test('Sliding Rek capture: piece slides multiple squares across empty board to execute a Rek sandwich capture', () {
     final board = List.generate(
       RekRules.boardSize,
       (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
@@ -149,18 +189,329 @@ void main() {
     board[3][2] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
     board[3][4] = const RekPiece(id: 't2', player: PlayerColor.teal, type: PieceType.plain);
 
-    // Friendly piece moves from (1, 3) to (3, 3)
-    board[1][3] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
+    // Friendly piece is 3 squares away at (0, 3)
+    board[0][3] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
 
-    final move = RekRules.simulateMove(
+    // Moving piece slides from (0, 3) down to (3, 3)
+    final legalMoves = RekRules.getLegalMoves(board, const BoardPosition(0, 3));
+    expect(legalMoves.contains(const BoardPosition(3, 3)), isTrue);
+
+    final move = RekRules.applyMove(
       board,
-      const BoardPosition(1, 3),
+      const BoardPosition(0, 3),
       const BoardPosition(3, 3),
     );
 
+    // Both sandwiched enemy pieces are captured
     expect(move.rekCaptures.length, 2);
-    expect(move.rekCaptures.contains(const BoardPosition(3, 2)), isTrue);
-    expect(move.rekCaptures.contains(const BoardPosition(3, 4)), isTrue);
+    expect(board[3][2], isNull);
+    expect(board[3][4], isNull);
+    expect(board[3][3]?.id, 'l1');
+    expect(board[0][3], isNull);
+  });
+
+  test('Rule 1: Rek capture horizontal and vertical sandwich mechanic', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Setup: Enemy pieces at (3, 2) and (3, 4)
+    board[3][2] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][4] = const RekPiece(id: 't2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Friendly piece at (2, 3) moves 1 square down to (3, 3)
+    board[2][3] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
+
+    final move = RekRules.applyMove(
+      board,
+      const BoardPosition(2, 3),
+      const BoardPosition(3, 3),
+    );
+
+    // Both enemy pieces removed from board
+    expect(move.rekCaptures.length, 2);
+    expect(board[3][2], isNull);
+    expect(board[3][4], isNull);
+    expect(board[3][3]?.id, 'l1');
+  });
+
+  test('Rule 1: Simultaneous 4-piece Rek capture (cross pattern)', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Enemy pieces surrounding square (3, 3) in + shape:
+    // Left (3, 2), Right (3, 4), Top (2, 3), Bottom (4, 3)
+    board[3][2] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][4] = const RekPiece(id: 't2', player: PlayerColor.teal, type: PieceType.plain);
+    board[2][3] = const RekPiece(id: 't3', player: PlayerColor.teal, type: PieceType.plain);
+    board[4][3] = const RekPiece(id: 't4', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Friendly piece moves from (3, 1) to (3, 3) -- wait, (3, 1) to (3, 2) is blocked!
+    // Friendly piece at (3, 3) is empty; friendly piece starts at (3, 1) ? No, 1 square away:
+    // Actually from (3, 2) is occupied by t1. If piece comes from e.g. (3, 3) is empty, but all 4 adjacents are occupied!
+    // A piece can't jump over!
+    // But in Rek, if piece moves to (3, 3) from another square... wait, 1 square orthogonal away would be (2, 3), (4, 3), (3, 2), (3, 4) which are all occupied!
+    // In simulateMove, cross capture logic is verified:
+    board[2][3] = const RekPiece(id: 'l_source', player: PlayerColor.lime, type: PieceType.plain);
+    // If top is l_source, it can move down to (3, 3), but then top is gone so top isn't enemy.
+    // What if enemy is at (2, 3) and (4, 3), and enemy at (3, 2) and (3, 4)?
+    // Can a piece move to (3, 3) from 1 square away?
+    // Since only 4 orthogonal neighbors exist and 4 are enemy, the piece would have to come from an orthogonal neighbor!
+    // That's an insightful geometric fact about 1-square movement: a simultaneous 4-piece capture can only happen if a piece slides from further away, OR in simulation.
+    // Let's verify simulateMove with 4 captures:
+    final simBoard = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+    simBoard[3][2] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
+    simBoard[3][4] = const RekPiece(id: 't2', player: PlayerColor.teal, type: PieceType.plain);
+    simBoard[2][3] = const RekPiece(id: 't3', player: PlayerColor.teal, type: PieceType.plain);
+    simBoard[4][3] = const RekPiece(id: 't4', player: PlayerColor.teal, type: PieceType.plain);
+    simBoard[3][3] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
+    final m4 = RekRules.simulateMove(simBoard, const BoardPosition(3, 3), const BoardPosition(3, 3));
+    expect(m4.rekCaptures.length, 4);
+  });
+
+  test('Surrounding Capture (Khat): single enemy piece with zero legal orthogonal moves is trapped and removed', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Enemy Teal piece in the corner at (0, 0)
+    board[0][0] = const RekPiece(id: 't_corner', player: PlayerColor.teal, type: PieceType.plain);
+    // Lime piece at (0, 1)
+    board[0][1] = const RekPiece(id: 'l_1', player: PlayerColor.lime, type: PieceType.plain);
+    // Lime piece at (5, 0) slides to (1, 0) to completely surround Teal at (0, 0)
+    board[5][0] = const RekPiece(id: 'l_slider', player: PlayerColor.lime, type: PieceType.plain);
+
+    final move = RekRules.applyMove(
+      board,
+      const BoardPosition(5, 0),
+      const BoardPosition(1, 0),
+    );
+
+    // Teal piece at (0, 0) has 0 liberties/moves: trapped by Khat!
+    expect(move.surroundCaptures.length, 1);
+    expect(move.surroundCaptures.first, const BoardPosition(0, 0));
+    expect(board[0][0], isNull); // Removed from board!
+  });
+
+  test('Surrounding Capture (Khat): connected group of enemy pieces completely surrounded is trapped and removed', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Connected group of 2 Teal pieces at (0, 0) and (0, 1)
+    board[0][0] = const RekPiece(id: 't_1', player: PlayerColor.teal, type: PieceType.plain);
+    board[0][1] = const RekPiece(id: 't_2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime pieces surrounding them:
+    // (1, 0) Lime, (1, 1) Lime
+    board[1][0] = const RekPiece(id: 'l_1', player: PlayerColor.lime, type: PieceType.plain);
+    board[1][1] = const RekPiece(id: 'l_2', player: PlayerColor.lime, type: PieceType.plain);
+    // Lime piece slides from (0, 7) to (0, 2) to block the last liberty
+    board[0][7] = const RekPiece(id: 'l_closer', player: PlayerColor.lime, type: PieceType.plain);
+
+    final move = RekRules.applyMove(
+      board,
+      const BoardPosition(0, 7),
+      const BoardPosition(0, 2),
+    );
+
+    // Both Teal pieces in the group have zero liberties: trapped by Khat!
+    expect(move.surroundCaptures.length, 2);
+    expect(move.surroundCaptures.contains(const BoardPosition(0, 0)), isTrue);
+    expect(move.surroundCaptures.contains(const BoardPosition(0, 1)), isTrue);
+    expect(board[0][0], isNull);
+    expect(board[0][1], isNull);
+  });
+
+  test('Surrounding Capture (Khat): group with at least one liberty is NOT trapped', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Connected group of 2 Teal pieces at (0, 0) and (0, 1)
+    board[0][0] = const RekPiece(id: 't_1', player: PlayerColor.teal, type: PieceType.plain);
+    board[0][1] = const RekPiece(id: 't_2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime pieces at (1, 0) and (1, 1), but (0, 2) is EMPTY (liberty exists!)
+    board[1][0] = const RekPiece(id: 'l_1', player: PlayerColor.lime, type: PieceType.plain);
+    board[1][1] = const RekPiece(id: 'l_2', player: PlayerColor.lime, type: PieceType.plain);
+
+    // Friendly lime piece moves elsewhere (e.g. (7, 7) to (7, 6))
+    board[7][7] = const RekPiece(id: 'l_other', player: PlayerColor.lime, type: PieceType.plain);
+
+    final move = RekRules.applyMove(
+      board,
+      const BoardPosition(7, 7),
+      const BoardPosition(7, 6),
+    );
+
+    // Teal group has liberty at (0, 2): NOT trapped!
+    expect(move.surroundCaptures, isEmpty);
+    expect(board[0][0], isNotNull);
+    expect(board[0][1], isNotNull);
+  });
+
+  test('Simultaneous Rek capture and Khat capture on the same move', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Setup Rek capture: Enemy at (3, 2) and (3, 4). Move to (3, 3) Rek captures them.
+    board[3][2] = const RekPiece(id: 't_rek1', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][4] = const RekPiece(id: 't_rek2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Setup Khat capture: Enemy at (2, 3) is surrounded on other 3 sides:
+    // (1, 3) Lime, (2, 2) Lime, (2, 4) Lime.
+    // The only open side of (2, 3) was (3, 3).
+    board[1][3] = const RekPiece(id: 'l_top', player: PlayerColor.lime, type: PieceType.plain);
+    board[2][2] = const RekPiece(id: 'l_left', player: PlayerColor.lime, type: PieceType.plain);
+    board[2][4] = const RekPiece(id: 'l_right', player: PlayerColor.lime, type: PieceType.plain);
+    board[2][3] = const RekPiece(id: 't_khat', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime piece at (7, 3) slides to (3, 3)
+    board[7][3] = const RekPiece(id: 'l_hero', player: PlayerColor.lime, type: PieceType.plain);
+
+    final move = RekRules.applyMove(
+      board,
+      const BoardPosition(7, 3),
+      const BoardPosition(3, 3),
+    );
+
+    // Simultaneously Rek captures (3, 2) and (3, 4), AND Khat traps (2, 3)!
+    expect(move.rekCaptures.length, 2);
+    expect(move.surroundCaptures.length, 1);
+    expect(move.surroundCaptures.first, const BoardPosition(2, 3));
+    expect(move.totalCaptures, 3);
+    expect(board[3][2], isNull);
+    expect(board[3][4], isNull);
+    expect(board[2][3], isNull);
+    expect(board[3][3]?.id, 'l_hero');
+  });
+
+  test('Rule 2: Rule of Hao strictly obligates capture and prohibits non-capturing moves when Call is clicked', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Lime piece A at (2, 3) can move to (3, 3) and Rek capture Teal at (3, 2) and (3, 4)
+    board[2][3] = const RekPiece(id: 'lime_rekker', player: PlayerColor.lime, type: PieceType.plain);
+    board[3][2] = const RekPiece(id: 'teal_1', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][4] = const RekPiece(id: 'teal_2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime piece B at (6, 6) is far away and cannot capture anything
+    board[6][6] = const RekPiece(id: 'lime_passive', player: PlayerColor.lime, type: PieceType.plain);
+
+    // 1. If opponent did NOT click Call: capturing is optional, player can decide!
+    expect(RekRules.isHaoActive(board, PlayerColor.lime, isCallActive: false), isFalse);
+    final optionalPassiveMoves = RekRules.getValidMovesForPiece(board, const BoardPosition(6, 6), isCallActive: false);
+    expect(optionalPassiveMoves, isNotEmpty); // Can move passive piece freely
+
+    // 2. If opponent clicked Call button (isCallActive = true): strict obligation!
+    expect(RekRules.isHaoActive(board, PlayerColor.lime, isCallActive: true), isTrue);
+
+    // Piece B (passive) CANNOT move! (Strict obligation)
+    final passiveMoves = RekRules.getValidMovesForPiece(board, const BoardPosition(6, 6), isCallActive: true);
+    expect(passiveMoves, isEmpty);
+
+    // Piece A MUST make the capturing move to (3, 3)
+    final rekkerMoves = RekRules.getValidMovesForPiece(board, const BoardPosition(2, 3), isCallActive: true);
+    expect(rekkerMoves.length, 1);
+    expect(rekkerMoves.first, const BoardPosition(3, 3));
+
+    // Overall valid moves only contains the capturing move
+    final allValid = RekRules.getAllValidMoves(board, PlayerColor.lime, isCallActive: true);
+    expect(allValid.length, 1);
+    expect(allValid.first.from, const BoardPosition(2, 3));
+    expect(allValid.first.to, const BoardPosition(3, 3));
+    expect(allValid.first.rekCaptures.length, 2);
+  });
+
+  test('Rek and Hao options for players: Rek allows optional capture while Hao enforces mandatory capture on Call', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Lime piece A at (2, 3) can capture Teal pieces at (3, 2) and (3, 4) by moving to (3, 3)
+    board[2][3] = const RekPiece(id: 'lime_rekker', player: PlayerColor.lime, type: PieceType.plain);
+    board[3][2] = const RekPiece(id: 'teal_1', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][4] = const RekPiece(id: 'teal_2', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime piece B at (6, 6) is far away and cannot capture anything
+    board[6][6] = const RekPiece(id: 'lime_passive', player: PlayerColor.lime, type: PieceType.plain);
+
+    // 1. Under "Hao" option when opponent clicked Call: strict obligation, capturing is mandatory
+    expect(RekRules.isHaoActive(board, PlayerColor.lime, ruleMode: RekRuleMode.hao, isCallActive: true), isTrue);
+    expect(RekRules.getValidMovesForPiece(board, const BoardPosition(6, 6), ruleMode: RekRuleMode.hao, isCallActive: true), isEmpty);
+    expect(RekRules.getValidMovesForPiece(board, const BoardPosition(2, 3), ruleMode: RekRuleMode.hao, isCallActive: true), [const BoardPosition(3, 3)]);
+
+    // Under "Hao" option when opponent did NOT click Call: player can decide whether they want to Rek or not!
+    expect(RekRules.isHaoActive(board, PlayerColor.lime, ruleMode: RekRuleMode.hao, isCallActive: false), isFalse);
+    expect(RekRules.getValidMovesForPiece(board, const BoardPosition(6, 6), ruleMode: RekRuleMode.hao, isCallActive: false), isNotEmpty);
+
+    // 2. Under "Rek" option: free choice, capturing is always optional
+    expect(RekRules.isHaoActive(board, PlayerColor.lime, ruleMode: RekRuleMode.rek), isFalse);
+    final passiveMovesInRek = RekRules.getValidMovesForPiece(board, const BoardPosition(6, 6), ruleMode: RekRuleMode.rek);
+    expect(passiveMovesInRek, isNotEmpty); // Piece B can move freely in Rek mode!
+    final rekkerMovesInRek = RekRules.getValidMovesForPiece(board, const BoardPosition(2, 3), ruleMode: RekRuleMode.rek);
+    expect(rekkerMovesInRek.contains(const BoardPosition(3, 3)), isTrue); // Can capture if player wants
+  });
+
+  test('Rule 4: Winning immediately when opponent Me (King) is captured', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Teal Me at (3, 2) and Teal plain at (3, 4)
+    board[3][2] = const RekPiece(id: 'teal_me', player: PlayerColor.teal, type: PieceType.crowned);
+    board[3][4] = const RekPiece(id: 'teal_plain', player: PlayerColor.teal, type: PieceType.plain);
+
+    // Lime Me at (7, 7) and Lime plain at (2, 3)
+    board[7][7] = const RekPiece(id: 'lime_me', player: PlayerColor.lime, type: PieceType.crowned);
+    board[2][3] = const RekPiece(id: 'lime_plain', player: PlayerColor.lime, type: PieceType.plain);
+
+    // Lime moves (2, 3) to (3, 3), capturing Teal Me!
+    final move = RekRules.applyMove(board, const BoardPosition(2, 3), const BoardPosition(3, 3));
+    expect(move.capturedKing, isTrue);
+
+    final result = RekRules.checkGameOver(board, PlayerColor.teal);
+    expect(result, isNotNull);
+    expect(result!.winner, PlayerColor.lime);
+    expect(result.reason, contains('"Me" (Commander)'));
+  });
+
+  test('Rule 4: Stalemate (blocked in with no valid moves) causes loss', () {
+    final board = List.generate(
+      RekRules.boardSize,
+      (_) => List<RekPiece?>.filled(RekRules.boardSize, null),
+    );
+
+    // Teal Me trapped in corner at (0, 0)
+    board[0][0] = const RekPiece(id: 't_me', player: PlayerColor.teal, type: PieceType.crowned);
+
+    // Surrounded by Lime pieces at (0, 1) and (1, 0)
+    board[0][1] = const RekPiece(id: 'l_1', player: PlayerColor.lime, type: PieceType.plain);
+    board[1][0] = const RekPiece(id: 'l_2', player: PlayerColor.lime, type: PieceType.plain);
+    // Lime also has their Me at (7, 7)
+    board[7][7] = const RekPiece(id: 'l_me', player: PlayerColor.lime, type: PieceType.crowned);
+
+    // It is Teal's turn, but Teal has zero legal moves
+    final result = RekRules.checkGameOver(board, PlayerColor.teal);
+    expect(result, isNotNull);
+    expect(result!.winner, PlayerColor.lime);
+    expect(result.reason, contains('blocked with no valid moves left'));
   });
 
   testWidgets('Username profile view and editing test', (WidgetTester tester) async {
@@ -292,17 +643,18 @@ void main() {
     expect(find.text('កំណត់ត្រាក្បាច់ដើរ'), findsOneWidget);
 
     // Verify detailed section titles in Khmer
-    expect(find.text('១. ក្តារអុក & គោលដៅនៃការលេង'), findsOneWidget);
-    expect(find.text('២. របៀបដើរកូនអុក (ដើរដូចទូកក្នុងអុក)'), findsOneWidget);
-    expect(find.text('៣. ក្បាច់ស៊ីរែក (The "Rek" Shoulder-Pole Capture)'), findsOneWidget);
-    expect(find.text('៤. ក្បាច់ព័ទ្ធស៊ី (ខាត់)'), findsOneWidget);
-    expect(find.text('៥. ផ្ទាំងបញ្ជា និងឧបករណ៍រៀបចំក្តារ'), findsOneWidget);
+    expect(find.text('១. ក្បាច់ស៊ីរែក (1. The Rule of "Rek" - Capturing)'), findsOneWidget);
+    expect(find.text('២. ច្បាប់ហៅ (2. The Rule of "Call" - Setting Traps & Forcing a Capture)'), findsOneWidget);
+    expect(find.text('៣. ក្បាច់ស៊ីខាត់ (3. The Rule of "Khat" - Surrounding Capture)'), findsOneWidget);
+    expect(find.text('៤. ច្បាប់ដើរទូទៅ (4. General Movement Rules)'), findsOneWidget);
+    expect(find.text('៥. លក្ខខណ្ឌឈ្នះ និងចាញ់ (5. Winning & Losing Conditions)'), findsOneWidget);
+    expect(find.text('៦. ផ្ទាំងបញ្ជា និងឧបករណ៍រៀបចំក្តារ (Controls & Editor)'), findsOneWidget);
 
     // Switch to English dynamically and verify update
     await LanguageService.instance.setLanguage(AppLanguage.english);
     await tester.pumpAndSettle();
 
-    expect(find.text('1. Board & Objective'), findsOneWidget);
+    expect(find.text('1. The Rule of "Rek" (Capturing)'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Rules & Guide'), findsOneWidget);
   });
 
@@ -778,6 +1130,191 @@ void main() {
     // Verify move succeeded: piece is now moved to square (4, 0)
     // and it is now Player 2 (Teal)'s turn
     expect(find.textContaining('Player 2'), findsWidgets);
+  });
+
+  testWidgets('Players can choose between Rek and Call options in Play vs AI and Pass & Play modals', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Open Pass & Play picker
+    await tester.tap(find.text('Pass & Play (2 Players)'));
+    await tester.pumpAndSettle();
+
+    // Verify "Select Play Option" header, and both "Rek" and "Call" options are displayed
+    expect(find.text('Select Play Option'), findsOneWidget);
+    expect(find.text('Rek'), findsOneWidget);
+    expect(find.text('Call'), findsOneWidget);
+    expect(find.text('Optional capture'), findsOneWidget);
+    expect(find.text('Mandatory capture'), findsOneWidget);
+
+    // Select Rek option
+    await tester.tap(find.text('Rek'));
+    await tester.pumpAndSettle();
+
+    // Start match
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // Verify the in-game badge displays Rek mode
+    expect(find.text('🎯 Rek'), findsOneWidget);
+
+    // Return to home
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('Warning'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    // 2. Open Play vs AI picker
+    await tester.tap(find.text('Play vs AI'));
+    await tester.pumpAndSettle();
+
+    // Verify both options also present in AI setup
+    expect(find.text('Select Play Option'), findsOneWidget);
+    expect(find.text('Rek'), findsOneWidget);
+    expect(find.text('Call'), findsOneWidget);
+
+    // Select Call option
+    await tester.tap(find.text('Call'));
+    await tester.pumpAndSettle();
+
+    // Start match
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // Verify in-game badge displays Call mode
+    expect(find.text('⚡ Call'), findsOneWidget);
+
+    // Return to home
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('Warning'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Call/Hao button allows players to call opponent to Rek with interactive alert and strict capture obligation', (WidgetTester tester) async {
+    await tester.pumpWidget(const RekGameApp());
+    await tester.pumpAndSettle();
+
+    // 1. Open Pass & Play modal
+    await tester.tap(find.text('Pass & Play (2 Players)'));
+    await tester.pumpAndSettle();
+
+    // 2. Select "Call" option and start match
+    await tester.tap(find.text('Call'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start Match'));
+    await tester.pumpAndSettle();
+
+    // 3. Verify Call buttons are present in the game UI (PlayerTimerCards, Banner, and Menu bar)
+    expect(find.text('Call'), findsWidgets);
+    expect(find.textContaining('Call'), findsWidgets);
+
+    // 4. Tap the Call button on the initial board (where no immediate Rek capture is open)
+    final callButtons = find.text('Call');
+    await tester.tap(callButtons.first);
+    await tester.pumpAndSettle();
+
+    // Should indicate no Rek opening is available to call
+    expect(find.textContaining('No Rek opening available'), findsOneWidget);
+
+    // 5. Test with an active Rek capture scenario using RekGameScreen directly
+    // Setup a board where Lime has baited Teal into a Rek capture
+    final trapBoard = List.generate(8, (_) => List<RekPiece?>.filled(8, null));
+    // Teal piece at (3, 3)
+    trapBoard[3][3] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
+    // Lime piece at (3, 2)
+    trapBoard[3][2] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
+    // Lime piece at (3, 4)
+    trapBoard[3][4] = const RekPiece(id: 'l2', player: PlayerColor.lime, type: PieceType.plain);
+    // Teal pieces at (3, 3) is caught in a Rek sandwich!
+    // But let's give Teal a piece at (4, 3) that can slide to (3, 3)...
+    // Better: Lime piece at (3, 2), Lime piece at (3, 4). Teal piece at (1, 3).
+    // When Teal moves from (1, 3) to (3, 3), Teal sandwiches Lime (3, 2) and (3, 4)!
+    // Wait: Rek sandwiches opponent pieces. If Teal moves between two Lime pieces (3, 2) and (3, 4), Teal captures both Lime pieces!
+    final callBoard = List.generate(8, (_) => List<RekPiece?>.filled(8, null));
+    callBoard[3][2] = const RekPiece(id: 'l1', player: PlayerColor.lime, type: PieceType.plain);
+    callBoard[3][4] = const RekPiece(id: 'l2', player: PlayerColor.lime, type: PieceType.plain);
+    // Teal piece at (1, 3) can slide south to (3, 3) and capture Lime at (3, 2) and (3, 4)!
+    callBoard[1][3] = const RekPiece(id: 't1', player: PlayerColor.teal, type: PieceType.plain);
+    // Also give Teal another piece at (0, 0) that cannot capture
+    callBoard[0][0] = const RekPiece(id: 't2', player: PlayerColor.teal, type: PieceType.plain);
+    // Give Lime a king/piece so game is not over
+    callBoard[7][7] = const RekPiece(id: 'lk', player: PlayerColor.lime, type: PieceType.crowned);
+    callBoard[0][7] = const RekPiece(id: 'tk', player: PlayerColor.teal, type: PieceType.crowned);
+
+    await tester.pumpWidget(MaterialApp(
+      home: RekGameScreen(
+        startInPlayMode: true,
+        vsAi: false,
+        ruleMode: RekRuleMode.hao,
+        initialSavedState: SavedGameState(
+          id: 'test_call',
+          name: 'Test Call',
+          timestamp: DateTime.now(),
+          board: callBoard,
+          currentTurn: PlayerColor.teal,
+          isPlayMode: true,
+          ruleMode: RekRuleMode.hao,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // 5a. Before Call button is clicked:
+    // Capturing is OPTIONAL. Teal can select non-capturing piece at (0, 0).
+    final boardSquares = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(GestureDetector),
+    );
+
+    // Tap piece at (0, 0) (index 0)
+    await tester.tap(boardSquares.at(0));
+    await tester.pumpAndSettle();
+
+    // Verify it is selected without error (no "Must capture! Cannot evade" message)
+    expect(find.textContaining('Cannot evade'), findsNothing);
+
+    // Deselect (tap square (0, 0) or tap outside)
+    await tester.tap(boardSquares.at(0));
+    await tester.pumpAndSettle();
+
+    // 5b. Opponent taps Call button to obligate Teal to capture!
+    final bannerCallBtn = find.text('Call');
+    expect(bannerCallBtn, findsWidgets);
+    await tester.tap(bannerCallBtn.first);
+    await tester.pumpAndSettle();
+
+    // Check notification confirms CALL was made!
+    expect(find.textContaining('must capture with Rek'), findsOneWidget);
+
+    // 5c. After Call is activated:
+    // Tapping the non-capturing piece at (0, 0) is blocked!
+    await tester.tap(boardSquares.at(0));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Must capture! Cannot evade'), findsOneWidget);
+
+    // 5d. Tapping the capturing piece at (1, 3) (index 1*8 + 3 = 11) is allowed
+    await tester.tap(boardSquares.at(11));
+    await tester.pumpAndSettle();
+
+    // Tap target destination (3, 3) (index 3*8 + 3 = 27)
+    await tester.tap(boardSquares.at(27));
+    await tester.pumpAndSettle();
+
+    // Notification confirms Rek capture
+    expect(find.textContaining('REK'), findsOneWidget);
+
+    // In RekRules:
+    final capturingMoves = RekRules.getCapturingMoves(callBoard, PlayerColor.teal);
+    expect(capturingMoves.isNotEmpty, isTrue);
+    expect(capturingMoves.first.to, equals(const BoardPosition(3, 3)));
   });
 }
 

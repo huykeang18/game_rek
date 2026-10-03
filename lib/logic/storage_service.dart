@@ -10,6 +10,7 @@ class SavedGameState {
   final List<List<RekPiece?>> board;
   final PlayerColor currentTurn;
   final bool isPlayMode;
+  final RekRuleMode ruleMode;
 
   SavedGameState({
     required this.id,
@@ -18,6 +19,7 @@ class SavedGameState {
     required this.board,
     required this.currentTurn,
     required this.isPlayMode,
+    this.ruleMode = RekRuleMode.hao,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class SavedGameState {
       'timestamp': timestamp.toIso8601String(),
       'currentTurn': currentTurn.index,
       'isPlayMode': isPlayMode,
+      'ruleMode': ruleMode.index,
       'board': boardJson,
     };
   }
@@ -60,6 +63,9 @@ class SavedGameState {
       board: board,
       currentTurn: PlayerColor.values[json['currentTurn'] as int],
       isPlayMode: json['isPlayMode'] as bool? ?? false,
+      ruleMode: json['ruleMode'] != null
+          ? RekRuleMode.values[json['ruleMode'] as int]
+          : RekRuleMode.hao,
     );
   }
 }

@@ -26,6 +26,7 @@ class RekGameScreen extends StatefulWidget {
   final bool startInPlayMode;
   final bool vsAi;
   final AiDifficulty aiDifficulty;
+  final RekRuleMode ruleMode;
   final int initialTimeLimitSeconds;
   final SavedGameState? initialSavedState;
 
@@ -34,6 +35,7 @@ class RekGameScreen extends StatefulWidget {
     this.startInPlayMode = false,
     this.vsAi = true,
     this.aiDifficulty = AiDifficulty.medium,
+    this.ruleMode = RekRuleMode.hao,
     this.initialTimeLimitSeconds = 300,
     this.initialSavedState,
   });
@@ -53,6 +55,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
   bool _isPlaying = false;
   bool _isExiting = false;
 
+  // Play Rule Mode: Rek vs Hao
+  late RekRuleMode _ruleMode;
+
   // Editor State
   PlayerColor _selectedPlayer = PlayerColor.lime;
   PieceType _selectedPieceType = PieceType.plain;
@@ -67,6 +72,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
   final List<RekMove> _moveHistory = [];
   GameOverResult? _gameOverResult;
   String? _lastNotification;
+  PlayerColor? _forcedCallTarget;
 
   // AI Opponent
   late bool _vsAi;
@@ -106,9 +112,14 @@ class _RekGameScreenState extends State<RekGameScreen> {
   @override
   void initState() {
     super.initState();
+    _ruleMode = widget.ruleMode;
     _isPlaying = widget.startInPlayMode;
     _vsAi = widget.vsAi;
-    _ai = RekAi(aiPlayer: PlayerColor.teal, difficulty: widget.aiDifficulty);
+    _ai = RekAi(
+      aiPlayer: PlayerColor.teal,
+      difficulty: widget.aiDifficulty,
+      ruleMode: _ruleMode,
+    );
     _timeLimitSeconds = widget.initialTimeLimitSeconds;
     _limeTimeSeconds = _timeLimitSeconds;
     _tealTimeSeconds = _timeLimitSeconds;
@@ -370,6 +381,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _recentCaptures = [];
       _gameOverResult = null;
       _lastNotification = null;
+      _forcedCallTarget = null;
       _currentTurn = PlayerColor.lime;
       _moveHistory.clear();
       _pointsAwarded = false;
@@ -581,6 +593,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
       board: _board,
       currentTurn: _currentTurn,
       isPlayMode: _isPlaying,
+      ruleMode: _ruleMode,
     );
 
     showDialog(
@@ -599,11 +612,17 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _board = RekRules.cloneBoard(state.board);
       _currentTurn = state.currentTurn;
       _isPlaying = state.isPlayMode;
+      _ruleMode = state.ruleMode;
+      _ai = RekAi(
+        aiPlayer: PlayerColor.teal,
+        difficulty: widget.aiDifficulty,
+        ruleMode: _ruleMode,
+      );
       _selectedSquare = null;
       _legalMoves = [];
       _lastMoveFromTo = [];
       _recentCaptures = [];
-      _gameOverResult = RekRules.checkGameOver(_board, _currentTurn);
+      _gameOverResult = RekRules.checkGameOver(_board, _currentTurn, ruleMode: _ruleMode);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -631,6 +650,7 @@ class _RekGameScreenState extends State<RekGameScreen> {
           _selectedSquare = null;
           _legalMoves = [];
           _isEraserActive = false;
+          _forcedCallTarget = null;
         });
         _pauseTimer();
       }
@@ -642,7 +662,8 @@ class _RekGameScreenState extends State<RekGameScreen> {
       _selectedSquare = null;
       _legalMoves = [];
       _isEraserActive = false;
-      _gameOverResult = RekRules.checkGameOver(_board, _currentTurn);
+      _forcedCallTarget = null;
+      _gameOverResult = RekRules.checkGameOver(_board, _currentTurn, ruleMode: _ruleMode);
     });
 
     AudioService.instance.playGameStart();
@@ -748,6 +769,66 @@ class _RekGameScreenState extends State<RekGameScreen> {
                     ),
                     ListTile(
                       dense: true,
+                      leading: Icon(
+                        _ruleMode == RekRuleMode.hao ? Icons.bolt : Icons.sports_kabaddi,
+                        color: _ruleMode == RekRuleMode.hao ? const Color(0xFFFFB74D) : const Color(0xFF81C784),
+                      ),
+                      title: Text(
+                        lang.gameModeLabel,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        _ruleMode == RekRuleMode.hao
+                            ? '${lang.modeHaoTitle} (${lang.modeHaoSubtitle})'
+                            : '${lang.modeRekTitle} (${lang.modeRekSubtitle})',
+                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: (_ruleMode == RekRuleMode.hao ? const Color(0xFFFFB74D) : const Color(0xFF81C784)).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _ruleMode == RekRuleMode.hao ? const Color(0xFFFFB74D) : const Color(0xFF81C784),
+                          ),
+                        ),
+                        child: Text(
+                          _ruleMode == RekRuleMode.hao ? 'Hao' : 'Rek',
+                          style: TextStyle(
+                            color: _ruleMode == RekRuleMode.hao ? const Color(0xFFFFB74D) : const Color(0xFF81C784),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      onTap: () {
+                        AudioService.instance.playClick();
+                        setState(() {
+                          _ruleMode = _ruleMode == RekRuleMode.hao ? RekRuleMode.rek : RekRuleMode.hao;
+                          _ai = RekAi(
+                            aiPlayer: PlayerColor.teal,
+                            difficulty: widget.aiDifficulty,
+                            ruleMode: _ruleMode,
+                          );
+                          _selectedSquare = null;
+                          _legalMoves = [];
+                        });
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _ruleMode == RekRuleMode.hao
+                                  ? (lang.isKhmer ? 'បានប្តូរទៅ៖ ក្បាច់ហៅ (Hao - បង្ខំស៊ី)' : 'Switched to: Hao Mode (Mandatory Capture)')
+                                  : (lang.isKhmer ? 'បានប្តូរទៅ៖ ក្បាច់រែក (Rek - ស៊ីធម្មតា)' : 'Switched to: Rek Mode (Optional Capture)'),
+                            ),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: const Color(0xFF2E7D32),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      dense: true,
                       leading: const Icon(Icons.menu_book, color: Color(0xFF4DB6AC)),
                       title: Text(lang.rulesAndHistoryTitle, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       subtitle: Text(lang.movesPlayed(_moveHistory.length), style: const TextStyle(color: Colors.white54, fontSize: 12)),
@@ -836,11 +917,33 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     // 2. Select a friendly piece
     if (clickedPiece != null && clickedPiece.player == _currentTurn) {
+      final isCallForced = _ruleMode == RekRuleMode.hao && _forcedCallTarget == _currentTurn;
+      final validMoves = RekRules.getValidMovesForPiece(
+        _board,
+        targetPos,
+        ruleMode: _ruleMode,
+        isCallActive: isCallForced,
+      );
+
+      // Rule of "Call" - Strict Obligation:
+      // Player must be rek when opponent called them by clicking the "Call" button.
+      // If opponent has not clicked Call, player can decide whether they want to Rek or not!
+      if (isCallForced && validMoves.isEmpty) {
+        AudioService.instance.playInvalid();
+        HapticFeedback.heavyImpact();
+        setState(() {
+          _lastNotification = LanguageService.instance.isKhmer
+              ? '⚡ ហៅ (Call)! ត្រូវតែស៊ី មិនអាចគេចវេះបានទេ!'
+              : '⚡ CALL! Must capture! Cannot evade.';
+        });
+        return;
+      }
+
       AudioService.instance.playSelect();
       HapticFeedback.selectionClick();
       setState(() {
         _selectedSquare = targetPos;
-        _legalMoves = RekRules.getLegalMoves(_board, targetPos);
+        _legalMoves = validMoves;
       });
       return;
     }
@@ -855,34 +958,146 @@ class _RekGameScreenState extends State<RekGameScreen> {
     });
   }
 
+  void _handleCall({PlayerColor? caller}) {
+    if (!_isPlaying || _gameOverResult != null) return;
+
+    final lang = LanguageService.instance;
+    final isKhmer = lang.isKhmer;
+
+    // Determine target (the player who has or is asked to execute a Rek/capture)
+    PlayerColor target;
+    PlayerColor actualCaller;
+
+    if (caller != null) {
+      actualCaller = caller;
+      target = caller.opponent;
+      // If the caller's opponent has no captures, but the caller has captures,
+      // allow calling the Rek opportunity for the player who has the captures.
+      if (RekRules.getCapturingMoves(_board, target).isEmpty &&
+          RekRules.getCapturingMoves(_board, actualCaller).isNotEmpty) {
+        target = actualCaller;
+        actualCaller = caller.opponent;
+      }
+    } else {
+      // Called from central banner or bottom bar
+      if (RekRules.getCapturingMoves(_board, _currentTurn).isNotEmpty) {
+        target = _currentTurn;
+        actualCaller = _currentTurn.opponent;
+      } else if (RekRules.getCapturingMoves(_board, _currentTurn.opponent).isNotEmpty) {
+        target = _currentTurn.opponent;
+        actualCaller = _currentTurn;
+      } else {
+        target = _currentTurn;
+        actualCaller = _currentTurn.opponent;
+      }
+    }
+
+    final capturingMoves = RekRules.getCapturingMoves(_board, target);
+
+    if (capturingMoves.isEmpty) {
+      AudioService.instance.playInvalid();
+      HapticFeedback.heavyImpact();
+      final targetName = target == PlayerColor.lime
+          ? UserService.instance.username
+          : (_vsAi ? 'Teal AI' : (isKhmer ? 'អ្នកលេងទី២' : 'Player 2'));
+      setState(() {
+        _lastNotification = isKhmer
+            ? '⚠️ គ្មានផ្លូវរែកសម្រាប់ $targetName ហៅទេ!'
+            : '⚠️ No Rek opening available for $targetName to call!';
+      });
+      return;
+    }
+
+    // Valid Call!
+    AudioService.instance.playTrap();
+    HapticFeedback.heavyImpact();
+
+    final callerName = actualCaller == PlayerColor.lime
+        ? UserService.instance.username
+        : (_vsAi ? 'Teal AI' : (isKhmer ? 'អ្នកលេងទី២' : 'Player 2'));
+    final targetName = target == PlayerColor.lime
+        ? UserService.instance.username
+        : (_vsAi ? 'Teal AI' : (isKhmer ? 'អ្នកលេងទី២' : 'Player 2'));
+
+    setState(() {
+      _forcedCallTarget = target;
+      _lastNotification = isKhmer
+          ? '⚡ $callerName បានហៅ (Call)! $targetName ត្រូវតែស៊ីរែក!'
+          : '⚡ CALL! $callerName called! $targetName must capture with Rek!';
+      // If currently the target's turn and a piece is selected that cannot capture, deselect it
+      if (_currentTurn == target && _selectedSquare != null) {
+        final validMoves = RekRules.getValidMovesForPiece(
+          _board,
+          _selectedSquare!,
+          ruleMode: _ruleMode,
+          isCallActive: true,
+        );
+        if (validMoves.isEmpty) {
+          _selectedSquare = null;
+          _legalMoves = [];
+        } else {
+          _legalMoves = validMoves;
+        }
+      }
+    });
+  }
+
   void _executeMove(BoardPosition from, BoardPosition to) {
     HapticFeedback.mediumImpact();
     final move = RekRules.applyMove(_board, from, to);
     _moveHistory.add(move);
 
     String? notif;
-    if (move.rekCaptures.isNotEmpty) {
-      notif = '⚡ REK! +${move.rekCaptures.length} captured!';
-      HapticFeedback.heavyImpact();
-      AudioService.instance.playCapture();
-    } else if (move.surroundCaptures.isNotEmpty) {
-      notif = '🔒 Trapped +${move.surroundCaptures.length} captured!';
+    final isKhmer = LanguageService.instance.isKhmer;
+    if (move.rekCaptures.isNotEmpty && move.surroundCaptures.isNotEmpty) {
+      notif = isKhmer
+          ? '⚡ រែក & ខាត់! +${move.totalCaptures} គ្រាប់!'
+          : '⚡ REK & KHAT! +${move.totalCaptures} captured!';
       HapticFeedback.heavyImpact();
       AudioService.instance.playTrap();
+    } else if (move.surroundCaptures.isNotEmpty) {
+      notif = isKhmer
+          ? '🕸️ ខាត់ (Khat)! +${move.surroundCaptures.length} គ្រាប់!'
+          : '🕸️ KHAT! +${move.surroundCaptures.length} trapped!';
+      HapticFeedback.heavyImpact();
+      AudioService.instance.playTrap();
+    } else if (move.rekCaptures.isNotEmpty) {
+      notif = isKhmer
+          ? '⚡ រែក (Rek)! +${move.rekCaptures.length} គ្រាប់!'
+          : '⚡ REK! +${move.rekCaptures.length} captured!';
+      HapticFeedback.heavyImpact();
+      AudioService.instance.playCapture();
     } else {
       AudioService.instance.playMove();
     }
 
     final nextTurn = _currentTurn == PlayerColor.lime ? PlayerColor.teal : PlayerColor.lime;
-    final gameOver = RekRules.checkGameOver(_board, nextTurn);
+    final gameOver = RekRules.checkGameOver(_board, nextTurn, ruleMode: _ruleMode);
+
+    // Rule of "Call":
+    // A player is strictly obligated to Rek ONLY when the opponent calls them by clicking the Call button.
+    // If the opponent does not click Call, the player can freely decide whether to Rek or not.
+    // In vs AI mode, if the AI sets a trap against the human player, the AI calls:
+    String? haoNotice;
+    PlayerColor? nextCallTarget;
+    if (_vsAi && _ruleMode == RekRuleMode.hao && gameOver == null && nextTurn == PlayerColor.lime) {
+      final aiTrapAvailable = RekRules.getCapturingMoves(_board, nextTurn).isNotEmpty;
+      if (aiTrapAvailable) {
+        haoNotice = isKhmer
+            ? '⚡ AI ហៅ (Call)! អ្នកត្រូវតែស៊ីរែក!'
+            : '⚡ AI CALLED! You are forced to capture with Rek!';
+        nextCallTarget = nextTurn;
+      }
+    }
 
     setState(() {
       _selectedSquare = null;
       _legalMoves = [];
       _lastMoveFromTo = [from, to];
-      _recentCaptures = [...move.rekCaptures, ...move.surroundCaptures];
-      _lastNotification = notif;
+      _recentCaptures = move.allCaptures;
+      _lastNotification = haoNotice ?? notif;
       _currentTurn = nextTurn;
+      _forcedCallTarget = nextCallTarget;
       _gameOverResult = gameOver;
     });
 
@@ -910,7 +1125,8 @@ class _RekGameScreenState extends State<RekGameScreen> {
       return;
     }
 
-    final bestMove = _ai.selectMove(_board);
+    final isAiCalled = _ruleMode == RekRuleMode.hao && _forcedCallTarget == _ai.aiPlayer;
+    final bestMove = _ai.selectMove(_board, isCallActive: isAiCalled);
     setState(() => _isAiThinking = false);
 
     if (bestMove != null) {
@@ -1078,6 +1294,31 @@ class _RekGameScreenState extends State<RekGameScreen> {
                 Navigator.pop(context);
               },
             ),
+            SwitchListTile(
+              title: Text(
+                _ruleMode == RekRuleMode.hao ? 'Call Mode (Mandatory Capture)' : 'Rek Mode (Optional Capture)',
+                style: const TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                _ruleMode == RekRuleMode.hao ? 'Strict call obligation active' : 'Free capture enabled',
+                style: const TextStyle(color: Colors.white54),
+              ),
+              value: _ruleMode == RekRuleMode.hao,
+              activeThumbColor: const Color(0xFFFFB74D),
+              onChanged: (val) {
+                setState(() {
+                  _ruleMode = val ? RekRuleMode.hao : RekRuleMode.rek;
+                  _ai = RekAi(
+                    aiPlayer: PlayerColor.teal,
+                    difficulty: widget.aiDifficulty,
+                    ruleMode: _ruleMode,
+                  );
+                  _selectedSquare = null;
+                  _legalMoves = [];
+                });
+                Navigator.pop(context);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.home, color: Color(0xFFFFD54F)),
               title: const Text('Return to Home Page', style: TextStyle(color: Colors.white)),
@@ -1175,7 +1416,6 @@ class _RekGameScreenState extends State<RekGameScreen> {
           onToggleErase: _onToggleErase,
           isEraserActive: _isEraserActive,
           onRotateBoard: _onRotateBoard,
-          isWifiConnected: true,
           labelEraseAll: lang.eraseAll,
           labelErase: lang.erase,
           labelRotateBoard: lang.rotateBoard,
@@ -1194,6 +1434,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
             isAi: _vsAi,
             isUntimed: _timeLimitSeconds == 0,
             onTimerTap: _showTimeControlPicker,
+            onCall: () => _handleCall(caller: PlayerColor.teal),
+            showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
+            isCallActive: _forcedCallTarget != null,
           )
         else
           PieceSelectorBar(
@@ -1219,6 +1462,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
             playerName: UserService.instance.username,
             playerAvatar: UserService.instance.avatar,
             vsAi: _vsAi,
+            ruleMode: _ruleMode,
+            onCall: () => _handleCall(),
+            isCallActive: _forcedCallTarget != null,
           ),
         ),
 
@@ -1253,6 +1499,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
               isTurn: _currentTurn == PlayerColor.lime,
               isUntimed: _timeLimitSeconds == 0,
               onTimerTap: _showTimeControlPicker,
+              onCall: () => _handleCall(caller: PlayerColor.lime),
+              showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
+              isCallActive: _forcedCallTarget != null,
             ),
           )
         else
@@ -1275,7 +1524,11 @@ class _RekGameScreenState extends State<RekGameScreen> {
           isPlaying: _isPlaying,
           labelSave: lang.save,
           labelPlay: lang.play,
+          labelCall: lang.isKhmer ? 'ហៅ (Call)' : 'Call',
           showSave: !_isPlaying,
+          onCall: () => _handleCall(),
+          showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
+          isCallActive: _forcedCallTarget != null,
         ),
       ],
     );
@@ -1303,9 +1556,6 @@ class _RekGameScreenState extends State<RekGameScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Green Wi-Fi icon
-              const Icon(Icons.wifi, color: Color(0xFF00E676), size: 20),
-              const SizedBox(width: 10),
               // Status banner in landscape top bar
               Expanded(
                 child: ListenableBuilder(
@@ -1320,6 +1570,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                     playerName: UserService.instance.username,
                     playerAvatar: UserService.instance.avatar,
                     vsAi: _vsAi,
+                    ruleMode: _ruleMode,
+                    onCall: () => _handleCall(),
+                    isCallActive: _forcedCallTarget != null,
                   ),
                 ),
               ),
@@ -1335,6 +1588,17 @@ class _RekGameScreenState extends State<RekGameScreen> {
               if (!_isPlaying) ...[
                 const SizedBox(width: 6),
                 _buildCompactBtn(lang.save, _onSave),
+              ],
+              if (_isPlaying && _ruleMode == RekRuleMode.hao) ...[
+                const SizedBox(width: 6),
+                _buildCompactBtn(
+                  '⚡ Call (ហៅ)',
+                  () => _handleCall(),
+                  highlight: true,
+                  backgroundColor: _forcedCallTarget != null
+                      ? const Color(0xFFD32F2F)
+                      : const Color(0xFFF57C00),
+                ),
               ],
               const SizedBox(width: 6),
               _buildCompactBtn(
@@ -1381,6 +1645,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                               isUntimed: _timeLimitSeconds == 0,
                               onTimerTap: _showTimeControlPicker,
                               isCompact: true,
+                              onCall: () => _handleCall(caller: PlayerColor.teal),
+                              showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
+                              isCallActive: _forcedCallTarget != null,
                             ),
                             const SizedBox(height: 10),
                             ListenableBuilder(
@@ -1395,6 +1662,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                                 isUntimed: _timeLimitSeconds == 0,
                                 onTimerTap: _showTimeControlPicker,
                                 isCompact: true,
+                                onCall: () => _handleCall(caller: PlayerColor.lime),
+                                showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
+                                isCallActive: _forcedCallTarget != null,
                               ),
                             ),
                           ],

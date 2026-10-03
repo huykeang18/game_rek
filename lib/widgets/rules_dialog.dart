@@ -106,42 +106,51 @@ class RulesDialog extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('១. ក្តារអុក & គោលដៅនៃការលេង'),
+            _buildSectionTitle('១. ក្បាច់ស៊ីរែក (1. The Rule of "Rek" - Capturing)'),
             _buildBodyText(
-              '• លេងនៅលើក្តារក្រឡា ៨×៨ រវាងពណ៌បៃតងចាស់ (ខាងលើ) និងពណ៌បៃតងខ្ចី (ខាងក្រោម)។\n'
-              '• អ្នកលេងម្នាក់ៗមានកូនអុកសរុប ១៦ គ្រាប់ រួមមាន ស្តេច ១ អង្គ (មានមកុដ) និងកូនទ័ពធម្មតា ១៥ គ្រាប់។\n'
-              '• គោលបំណងចម្បង៖ ស៊ីស្តេចរបស់គូប្រកួត ឬស៊ីកូនអុកគូប្រកួតទាំងអស់ឱ្យអស់ពីក្តារដើម្បីទទួលបានជ័យជម្នះ!',
+              '• យន្តការស៊ីរែក (Capturing Mechanism)៖ អ្នកលេងអាច «រែក» ស៊ីកូនអុករបស់គូប្រកួតបាន លុះត្រាតែដើរកូនអុករបស់ខ្លួនចូលចំកណ្តាលរវាងកូនអុកសត្រូវ ២ គ្រាប់ដែលនៅជាប់គ្នាជាបន្ទាត់ត្រង់ (ខ្សែផ្តេក ឬខ្សែបញ្ឈរ)។\n'
+              '• នៅពេលរែកបាន កូនអុកសត្រូវទាំង ២ គ្រាប់នោះនឹងត្រូវដកចេញពីក្តារភ្លាមៗ (រូបរាងដូចមនុស្សកំពុងរែកអង្រែកដែលមានបន្ទុកស្មើគ្នានៅសងខាងស្មា)។\n'
+              '• ប្រសិនបើដើរចូលចំកណ្តាលរវាងខ្សែផ្តេកផង និងខ្សែបញ្ឈរផង នោះអាចរែកស៊ីបានទាំង ៤ គ្រាប់ក្នុងពេលតែមួយ!',
             ),
             const SizedBox(height: 14),
 
-            _buildSectionTitle('២. របៀបដើរកូនអុក (ដើរដូចទូកក្នុងអុក)'),
+            _buildSectionTitle('២. ច្បាប់ហៅ (2. The Rule of "Call" - Setting Traps & Forcing a Capture)'),
             _buildBodyText(
-              '• កូនអុកទាំងអស់ (ទាំងស្តេច និងកូនទ័ព) ដើរផ្លូវត្រង់ (ឡើងលើ ចុះក្រោម ទៅឆ្វេង ទៅស្តាំ) ដោយរំលងក្រឡាទទេបានច្រើនក្រឡាតាមចិត្ត ដូចទូកក្នុងអុកចត្រង្គដែរ។\n'
-              '• កូនអុកមិនអាចដើររំលង ឬផ្លោះពីលើកូនអុកដទៃទៀតបានឡើយ។',
+              '• ការដាក់អន្ទាក់ (Baiting)៖ ជាយុទ្ធសាស្ត្រដែលអ្នកលេងដើរកូនអុករបស់ខ្លួនដើម្បីដាក់អន្ទាក់ ដោយចេតនាបើកផ្លូវឱ្យគូប្រកួតដើរចូលដើម្បីស៊ី (រែក/ខាត់) កូនអុករបស់ខ្លួន។\n'
+              '• ប៊ូតុងហៅ និងកាតព្វកិច្ចស៊ី (Strict Obligation by Button Call)៖ អ្នកលេងត្រូវតែស៊ីរែកដាច់ខាត លុះត្រាតែគូប្រកួតបានចុចប៊ូតុង «ហៅ» (Call)។ ប្រសិនបើគូប្រកួតមិនបានចុចប៊ូតុងហៅទេ នោះអ្នកលេងអាចសម្រេចចិត្តដោយសេរីថាតើចង់ស៊ីរែក ឬចង់ដើរក្រឡាធម្មតាផ្សេងទៀត!\n'
+              '• ប្រសិនបើមានអន្ទាក់ «ហៅ» (Call) ច្រើនក្នុងពេលតែមួយ អ្នកលេងដែលត្រូវបង្ខំឱ្យស៊ី អាចជ្រើសរើសស៊ីអន្ទាក់ណាមួយដែលផ្តល់ការខាតបង់តិចបំផុត។',
             ),
             const SizedBox(height: 14),
 
-            _buildSectionTitle('៣. ក្បាច់ស៊ីរែក (The "Rek" Shoulder-Pole Capture)'),
+            _buildSectionTitle('៣. ក្បាច់ស៊ីខាត់ (3. The Rule of "Khat" - Surrounding Capture)'),
             _buildBodyText(
-              '• ពាក្យថា «រែក» គឺសំដៅលើទំនៀមខ្មែរក្នុងការប្រើអង្រែកដាក់លើស្មា ដោយមានកញ្ជើ ឬល្អីនៅសងខាងយ៉ាងមានលំនឹង។\n'
-              '• នៅពេលអ្នកដើរកូនអុករបស់អ្នកចូលចន្លោះកណ្តាលរវាងកូនអុកសត្រូវ ២ គ្រាប់ដែលនៅជាប់គ្នាជាខ្សែបន្ទាត់ត្រង់ '
-              '(ខ្សែផ្តេក៖ សត្រូវ - យើង - សត្រូវ ឬខ្សែបញ្ឈរ៖ សត្រូវ - យើង - សត្រូវ) អ្នកនឹង «រែក» ហើយស៊ីកូនអុកសត្រូវទាំង ២ គ្រាប់នោះភ្លាមៗ!\n'
-              '• ប្រសិនបើក្បាច់ដើររបស់អ្នកអាចរែកបានទាំងខ្សែផ្តេក និងខ្សែបញ្ឈរក្នុងពេលតែមួយ អ្នកនឹងអាចស៊ីកូនអុកសត្រូវរហូតដល់ ៤ គ្រាប់ក្នុងពេលតែមួយ!',
+              '• ការឡោមព័ទ្ធចាប់ស៊ី (Surrounding Capture)៖ កូនអុក ឬក្រុមនៃកូនអុករបស់សត្រូវណាដែលត្រូវបានឡោមព័ទ្ធជុំជិតទាំងស្រុង ដោយគ្មានក្រឡាទំនេរស្របច្បាប់ណាមួយអាចដើរបាន (Zero legal orthogonal moves) ត្រូវបានចាត់ទុកថាជាប់អន្ទាក់ (ខាត់) ហើយត្រូវដកចេញពីក្តារភ្លាមៗ។\n'
+              '• ច្បាប់ខាត់នេះអនុវត្តទាំងលើជម្រើសលេងរែក (Rek) និងជម្រើសលេងហៅ (Call)។\n'
+              '• ប្រសិនបើការដើរមួយបង្កើតបានទាំងការស៊ីរែកផង និងស៊ីខាត់ផង នោះកូនអុកសត្រូវទាំងអស់ដែលត្រូវរែក និងត្រូវខាត់ នឹងត្រូវដកចេញពីក្តារក្នុងពេលតែមួយ!',
             ),
             const SizedBox(height: 14),
 
-            _buildSectionTitle('៤. ក្បាច់ព័ទ្ធស៊ី (ខាត់)'),
+            _buildSectionTitle('៤. ច្បាប់ដើរទូទៅ (4. General Movement Rules)'),
             _buildBodyText(
-              '• កូនអុក ឬក្រុមនៃកូនអុករបស់សត្រូវណាដែលត្រូវបានឡោមព័ទ្ធជុំជិតដោយគ្មានក្រឡាទំនេរណាមួយអាចដើរបាន ត្រូវបានចាត់ទុកថាជាប់អន្ទាក់ (ខាត់) ហើយត្រូវដកចេញពីក្តារ។',
+              '• កូនអុកនីមួយៗអាចរត់ជាខ្សែបន្ទាត់ត្រង់ (ទៅមុខ ថយក្រោយ ទៅឆ្វេង ឬទៅស្តាំ ដូចទូកក្នុងអុក) បានច្រើនក្រឡារហូតដល់ទល់នឹងឧបសគ្គ (កូនអុកផ្សេងទៀត ឬជាយនៃក្តារ)។\n'
+              '• កូនអុកមិនអាចដើរបញ្ឆិត (អង្កត់ទ្រូង) ឬលោតរំលងកូនអុកដទៃបានឡើយ។\n'
+              '• ការលេងរួមមានកូនអុកធម្មតា និងកូនអុកពិសេសមួយហៅថា «មេ» (Me - King/Commander) ដែលជាគោលដៅចម្បងនៅលើក្តារ។',
             ),
             const SizedBox(height: 14),
 
-            _buildSectionTitle('៥. ផ្ទាំងបញ្ជា និងឧបករណ៍រៀបចំក្តារ'),
+            _buildSectionTitle('៥. លក្ខខណ្ឌឈ្នះ និងចាញ់ (5. Winning & Losing Conditions)'),
             _buildBodyText(
-              '• ប្រើប្រអប់ជ្រើសរើសកូនអុកខាងលើ និងខាងក្រោមក្តារ ដើម្បីរៀបចំកូនអុកលើក្តារតាមការចង់បាន។\n'
-              '• ចុច «លុប» ដើម្បីលុបកូនអុកម្តងមួយ ឬ «លុបទាំងអស់» ដើម្បីសម្អាតក្តារទាំងមូល។\n'
-              '• ចុច «បង្វិលក្តារ» ដើម្បីបង្វិលមុំមើលក្តារអុក ១៨០ ដឺក្រេ។\n'
-              '• ចុច «លេង» ដើម្បីចាប់ផ្តើមលេងការប្រកួតពិតប្រាកដជាមួយ AI ដ៏ឆ្លាតវៃ ឬលេង២នាក់នៅលើឧបករណ៍តែមួយ!',
+              '• អ្នកឈ្នះ គឺជាអ្នកលេងដែលស៊ីកូនអុករបស់គូប្រកួតទាំងអស់ឱ្យអស់ពីក្តារ ឬឡោមព័ទ្ធចាប់ស៊ី «មេ» (Me) របស់គូប្រកួតបានសម្រេច។\n'
+              '• អ្នកលេងក៏ត្រូវចាញ់ផងដែរ ប្រសិនបើត្រូវបានគូប្រកួតឡោមព័ទ្ធជិតទាំងស្រុង (ខាត់/Stalemate) ដោយគ្មានក្រឡាស្របច្បាប់ណាមួយអាចដើរបាន។',
+            ),
+            const SizedBox(height: 14),
+
+            _buildSectionTitle('៦. ផ្ទាំងបញ្ជា និងឧបករណ៍រៀបចំក្តារ (Controls & Editor)'),
+            _buildBodyText(
+              '• ប្រើប្រអប់ជ្រើសរើសកូនអុកដើម្បីរៀបចំក្តារដោយសេរី។\n'
+              '• ចុច «លុប» ឬ «លុបទាំងអស់» ដើម្បីសម្អាតក្តារ។\n'
+              '• ចុច «បង្វិលក្តារ» ដើម្បីបង្វិលមុំមើល ១៨០ ដឺក្រេ។\n'
+              '• ចុច «លេង» ដើម្បីចាប់ផ្តើមលេងការប្រកួតពិតប្រាកដជាមួយ AI ឬលេង២នាក់!',
             ),
           ],
         ),
@@ -153,44 +162,50 @@ class RulesDialog extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('1. Board & Objective'),
+          _buildSectionTitle('1. The Rule of "Rek" (Capturing)'),
           _buildBodyText(
-            '• Played on an 8×8 board between Teal (Top) and Lime Green (Bottom).\n'
-            '• Each player controls 1 King (crowned) and 15 Men (plain).\n'
-            '• Objective: Capture the opposing player\'s King or eliminate all opposing pieces!',
+            '• Capturing Mechanism: A player can "Rek" (capture) the opponent\'s pieces only when they move one of their own pieces to land exactly in the middle between two of the opponent\'s pieces (in a straight horizontal or vertical line).\n'
+            '• Once captured, both of the opponent\'s pieces are removed from the board (this visually resembles a person carrying a balanced load on both ends of a shoulder pole).\n'
+            '• If a move simultaneously sandwiches between two opponent pieces horizontally and two vertically, all 4 pieces are captured!',
           ),
           const SizedBox(height: 14),
 
-          _buildSectionTitle('2. Movement (Rook-like)'),
+          _buildSectionTitle('2. The Rule of "Call" (Setting Traps & Forcing a Capture)'),
           _buildBodyText(
-            '• All pieces (both King and Men) move orthogonally (up, down, left, right) '
-            'any number of unoccupied squares, exactly like a Chess Rook.\n'
-            '• Pieces cannot jump over other pieces.',
+            '• Baiting: A strategy where a player moves their piece to set a trap, opening a path to bait the opponent into capturing their piece.\n'
+            '• Call Button & Strict Obligation: A player is strictly obligated to Rek ONLY when the opponent calls them by clicking the "Call" button! If the opponent does NOT click the Call button, the player can freely decide whether they want to Rek or make another legal move.\n'
+            '• If there are multiple "Call" traps set at the same time, the player forced to capture may choose which one to take based on which will result in the least loss.',
           ),
           const SizedBox(height: 14),
 
-          _buildSectionTitle('3. The "Rek" (Shoulder Pole) Capture'),
+          _buildSectionTitle('3. Surrounding Capture (Khat)'),
           _buildBodyText(
-            '• "Rek" in Khmer means carrying baskets balanced on a shoulder pole.\n'
-            '• When you move your piece directly between two adjacent enemy pieces along a straight line '
-            '(Horizontal: Enemy - You - Enemy, or Vertical: Enemy - You - Enemy), '
-            'you "Rek" and capture both enemy pieces!\n'
-            '• If your move simultaneously sandwiches both horizontally and vertically, you capture all 4 pieces!',
+            '• Surrounding Capture (Khat): Any enemy piece or group completely surrounded with zero legal orthogonal moves is trapped and removed from the board.\n'
+            '• This rule applies to both "Rek" and "Call" game modes.\n'
+            '• If a single move simultaneously executes both a Rek sandwich capture and traps an enemy group with Khat, all captured and trapped pieces are removed from the board together!',
           ),
           const SizedBox(height: 14),
 
-          _buildSectionTitle('4. Surrounding Capture (Khat)'),
+          _buildSectionTitle('4. General Movement Rules'),
           _buildBodyText(
-            '• Any enemy piece or group completely surrounded with zero legal orthogonal moves '
-            'is trapped and removed from the board.',
+            '• Each piece can move in straight orthogonal lines: forward, backward, left, or right (like a Rook in chess) across any number of empty squares until obstructed by another piece or the board edge.\n'
+            '• Pieces cannot move diagonally and cannot jump over other pieces.\n'
+            '• Gameplay generally involves standard pieces and one piece called the "Me" (King/Commander), which is the primary target on the board.',
           ),
           const SizedBox(height: 14),
 
-          _buildSectionTitle('5. Interface & Editor'),
+          _buildSectionTitle('5. Winning and Losing Conditions'),
           _buildBodyText(
-            '• Use Piece Selectors to customize the board.\n'
-            '• Tap "Erase" to remove pieces or "Erase all" to clear.\n'
-            '• Tap "Rotate Baord" to flip the board view.\n'
+            '• The winner is the player who captures all of the opponent\'s pieces or successfully traps and captures the opponent\'s "Me".\n'
+            '• A player also loses if they are completely blocked in (stalemate) by the opponent and have no valid moves left.',
+          ),
+          const SizedBox(height: 14),
+
+          _buildSectionTitle('6. Interface & Editor Controls'),
+          _buildBodyText(
+            '• Use Piece Selectors to customize your board setup.\n'
+            '• Tap "Erase" to remove pieces or "Erase all" to clear the board.\n'
+            '• Tap "Rotate Baord" to flip the board view 180 degrees.\n'
             '• Tap "Play" to start real game play with move highlights and AI!',
           ),
         ],
@@ -242,8 +257,8 @@ class RulesDialog extends StatelessWidget {
                   ),
                   child: Text(
                     isKhmer
-                        ? '+${move.totalCaptures} រែក'
-                        : '+${move.totalCaptures} Rek',
+                        ? '+${move.totalCaptures} ${move.surroundCaptures.isNotEmpty && move.rekCaptures.isEmpty ? "ខាត់" : "រែក"}'
+                        : '+${move.totalCaptures} ${move.surroundCaptures.isNotEmpty && move.rekCaptures.isEmpty ? "Khat" : "Rek"}',
                     style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 )

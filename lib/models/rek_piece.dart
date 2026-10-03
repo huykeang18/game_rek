@@ -1,6 +1,8 @@
 enum PlayerColor {
   teal,
-  lime,
+  lime;
+
+  PlayerColor get opponent => this == PlayerColor.teal ? PlayerColor.lime : PlayerColor.teal;
 }
 
 enum PieceType {

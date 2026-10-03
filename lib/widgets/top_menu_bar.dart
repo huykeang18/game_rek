@@ -5,7 +5,6 @@ class TopMenuBar extends StatelessWidget {
   final VoidCallback? onToggleErase;
   final bool isEraserActive;
   final VoidCallback onRotateBoard;
-  final bool isWifiConnected;
   final String labelEraseAll;
   final String labelErase;
   final String labelRotateBoard;
@@ -17,7 +16,6 @@ class TopMenuBar extends StatelessWidget {
     this.onToggleErase,
     this.isEraserActive = false,
     required this.onRotateBoard,
-    this.isWifiConnected = true,
     this.labelEraseAll = 'Erase all',
     this.labelErase = 'Erase',
     this.labelRotateBoard = 'Rotate Baord',
@@ -35,20 +33,6 @@ class TopMenuBar extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Green Wi-Fi connection icon in the top left corner
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.wifi,
-                  color: isWifiConnected ? const Color(0xFF00E676) : Colors.grey,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
               // Action Buttons: "Erase all", "Erase" (only if showEditorButtons), and "Rotate Baord"
               if (showEditorButtons) ...[
                 if (onEraseAll != null) ...[
