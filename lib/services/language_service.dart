@@ -160,6 +160,9 @@ class LanguageService extends ChangeNotifier {
   String wins(String name) => isKhmer ? '$name ឈ្នះ!' : '$name WINS!';
   String get playAgain => isKhmer ? 'លេងម្តងទៀត' : 'Play Again';
   String get close => isKhmer ? 'បិទ' : 'Close';
+  String get kingCannotMove => isKhmer
+      ? '👑 មេ (King) ស្ថិតនៅមួយកន្លែងមិនអាចដើរបានទេ!'
+      : '👑 The King (Me) is fixed in place and cannot move!';
 
   // Cancel / Quit Game Warning Dialog
   String get warning => isKhmer ? 'ការព្រមាន' : 'Warning';

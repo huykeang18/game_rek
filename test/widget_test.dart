@@ -1316,6 +1316,167 @@ void main() {
     expect(capturingMoves.isNotEmpty, isTrue);
     expect(capturingMoves.first.to, equals(const BoardPosition(3, 3)));
   });
+
+  test('The King (Me) is fixed in one place and cannot move rule verification', () {
+    final board = RekRules.createInitialBoard();
+
+    // Teal King is at (1, 7)
+    final tealKingPos = const BoardPosition(1, 7);
+    expect(board[1][7]?.isCrowned, isTrue);
+    expect(board[1][7]?.player, PlayerColor.teal);
+
+    // Lime King is at (6, 0)
+    final limeKingPos = const BoardPosition(6, 0);
+    expect(board[6][0]?.isCrowned, isTrue);
+    expect(board[6][0]?.player, PlayerColor.lime);
+
+    // Clear surroundings so King has empty adjacent squares
+    board[0][7] = null;
+    board[2][7] = null;
+    board[1][6] = null;
+
+    // Verify King has ZERO legal moves despite open space
+    final kingMoves = RekRules.getLegalMoves(board, tealKingPos);
+    expect(kingMoves, isEmpty);
+    expect(RekRules.getLegalMoves(board, limeKingPos), isEmpty);
+
+    final validKingMoves = RekRules.getValidMovesForPiece(board, tealKingPos);
+    expect(validKingMoves, isEmpty);
+
+    // Plain piece can move
+    board[2][0] = const RekPiece(id: 'plain_test', player: PlayerColor.teal, type: PieceType.plain);
+    board[3][0] = null;
+    board[4][0] = null;
+    final plainMoves = RekRules.getLegalMoves(board, const BoardPosition(2, 0));
+    expect(plainMoves.isNotEmpty, isTrue);
+
+    // Verify getAllValidMoves never includes moves originating from King's position
+    final allTealMoves = RekRules.getAllValidMoves(board, PlayerColor.teal);
+    for (final move in allTealMoves) {
+      expect(move.piece.isCrowned, isFalse);
+      expect(move.from, isNot(equals(tealKingPos)));
+    }
+  });
+
+  testWidgets('Tapping the King shows notification that King is fixed and cannot move', (WidgetTester tester) async {
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    final board = List.generate(8, (_) => List<RekPiece?>.filled(8, null));
+    // Place Teal King at (1, 7) and a plain piece at (2, 2)
+    board[1][7] = const RekPiece(id: 'tk', player: PlayerColor.teal, type: PieceType.crowned);
+    board[2][2] = const RekPiece(id: 'tp', player: PlayerColor.teal, type: PieceType.plain);
+    // Lime pieces
+    board[6][0] = const RekPiece(id: 'lk', player: PlayerColor.lime, type: PieceType.crowned);
+    board[5][5] = const RekPiece(id: 'lp', player: PlayerColor.lime, type: PieceType.plain);
+
+    await tester.pumpWidget(MaterialApp(
+      home: RekGameScreen(
+        startInPlayMode: true,
+        vsAi: false,
+        initialSavedState: SavedGameState(
+          id: 'test_stationary_king',
+          name: 'Stationary King Test',
+          timestamp: DateTime.now(),
+          board: board,
+          currentTurn: PlayerColor.teal,
+          isPlayMode: true,
+          ruleMode: RekRuleMode.rek,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final boardSquares = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(GestureDetector),
+    );
+
+    // Tap Teal King at (1, 7) -> index 1 * 8 + 7 = 15
+    await tester.tap(boardSquares.at(15));
+    await tester.pumpAndSettle();
+
+    // Verify warning notification appears explaining the King cannot move
+    expect(find.textContaining('is fixed in place and cannot move'), findsOneWidget);
+
+    // Now tap the plain piece at (2, 2) -> index 2 * 8 + 2 = 18
+    await tester.tap(boardSquares.at(18));
+    await tester.pumpAndSettle();
+
+    // Tap valid empty square at (3, 2) -> index 3 * 8 + 2 = 26 to execute move
+    await tester.tap(boardSquares.at(26));
+    await tester.pumpAndSettle();
+
+    // After move, notification updates with move details and no longer shows king warning
+    expect(find.textContaining('is fixed in place and cannot move'), findsNothing);
+  });
+
+  testWidgets('Move from one square to another displays shadow color highlight and move notation', (WidgetTester tester) async {
+    await LanguageService.instance.setLanguage(AppLanguage.english);
+
+    final board = List.generate(8, (_) => List<RekPiece?>.filled(8, null));
+    board[2][2] = const RekPiece(id: 'tp', player: PlayerColor.teal, type: PieceType.plain);
+    board[1][7] = const RekPiece(id: 'tk', player: PlayerColor.teal, type: PieceType.crowned);
+    board[6][0] = const RekPiece(id: 'lk', player: PlayerColor.lime, type: PieceType.crowned);
+    board[5][5] = const RekPiece(id: 'lp', player: PlayerColor.lime, type: PieceType.plain);
+
+    await tester.pumpWidget(MaterialApp(
+      home: RekGameScreen(
+        startInPlayMode: true,
+        vsAi: false,
+        initialSavedState: SavedGameState(
+          id: 'test_move_tracking',
+          name: 'Move Tracking Test',
+          timestamp: DateTime.now(),
+          board: board,
+          currentTurn: PlayerColor.teal,
+          isPlayMode: true,
+          ruleMode: RekRuleMode.rek,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final boardSquares = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(GestureDetector),
+    );
+
+    // Tap Teal piece at (2, 2) -> index 2 * 8 + 2 = 18
+    await tester.tap(boardSquares.at(18));
+    await tester.pumpAndSettle();
+
+    // Tap empty square at (3, 2) -> index 3 * 8 + 2 = 26
+    await tester.tap(boardSquares.at(26));
+    await tester.pumpAndSettle();
+
+    // 1. Verify clean shadow color: no text badges or arrows
+    expect(find.text('FROM'), findsNothing);
+    expect(find.text('TO'), findsNothing);
+
+    // 2. Verify shadow color highlight containers exist for origin and destination
+    final coloredBoxes = find.descendant(
+      of: find.byType(WoodBoard),
+      matching: find.byType(Container),
+    );
+    final hasFromShadow = coloredBoxes.evaluate().any((e) {
+      final widget = e.widget as Container;
+      final dec = widget.decoration;
+      return dec is BoxDecoration && dec.color == const Color(0x40FFD54F);
+    });
+    final hasToShadow = coloredBoxes.evaluate().any((e) {
+      final widget = e.widget as Container;
+      final dec = widget.decoration;
+      return dec is BoxDecoration && dec.color == const Color(0x55FFD54F);
+    });
+    expect(hasFromShadow, isTrue);
+    expect(hasToShadow, isTrue);
+
+    // 3. Verify move notation appears in notification banner
+    expect(find.textContaining('c6 → c5'), findsWidgets);
+
+    // 4. Verify PlayerTimerCard displays the last move badge
+    expect(find.textContaining('↳ c6 → c5'), findsOneWidget);
+  });
 }
 
 

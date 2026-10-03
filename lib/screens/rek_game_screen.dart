@@ -917,6 +917,18 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     // 2. Select a friendly piece
     if (clickedPiece != null && clickedPiece.player == _currentTurn) {
+      // The King ("Me") is fixed in one place and cannot move
+      if (clickedPiece.isCrowned) {
+        AudioService.instance.playInvalid();
+        HapticFeedback.heavyImpact();
+        setState(() {
+          _lastNotification = LanguageService.instance.kingCannotMove;
+          _selectedSquare = null;
+          _legalMoves = [];
+        });
+        return;
+      }
+
       final isCallForced = _ruleMode == RekRuleMode.hao && _forcedCallTarget == _currentTurn;
       final validMoves = RekRules.getValidMovesForPiece(
         _board,
@@ -1049,25 +1061,34 @@ class _RekGameScreenState extends State<RekGameScreen> {
 
     String? notif;
     final isKhmer = LanguageService.instance.isKhmer;
+    final moverColor = _currentTurn;
+    final moverName = moverColor == PlayerColor.lime
+        ? (_vsAi ? UserService.instance.username : (isKhmer ? 'បៃតងខ្ចី (Lime)' : 'Lime'))
+        : (_vsAi ? 'AI' : (isKhmer ? 'បៃតងចាស់ (Teal)' : 'Teal'));
+    final moveNotation = '${from.notation} → ${to.notation}';
+
     if (move.rekCaptures.isNotEmpty && move.surroundCaptures.isNotEmpty) {
       notif = isKhmer
-          ? '⚡ រែក & ខាត់! +${move.totalCaptures} គ្រាប់!'
-          : '⚡ REK & KHAT! +${move.totalCaptures} captured!';
+          ? '⚡ រែក & ខាត់! ($moveNotation) +${move.totalCaptures} គ្រាប់!'
+          : '⚡ REK & KHAT! ($moveNotation) +${move.totalCaptures} captured!';
       HapticFeedback.heavyImpact();
       AudioService.instance.playTrap();
     } else if (move.surroundCaptures.isNotEmpty) {
       notif = isKhmer
-          ? '🕸️ ខាត់ (Khat)! +${move.surroundCaptures.length} គ្រាប់!'
-          : '🕸️ KHAT! +${move.surroundCaptures.length} trapped!';
+          ? '🕸️ ខាត់ (Khat)! ($moveNotation) +${move.surroundCaptures.length} គ្រាប់!'
+          : '🕸️ KHAT! ($moveNotation) +${move.surroundCaptures.length} trapped!';
       HapticFeedback.heavyImpact();
       AudioService.instance.playTrap();
     } else if (move.rekCaptures.isNotEmpty) {
       notif = isKhmer
-          ? '⚡ រែក (Rek)! +${move.rekCaptures.length} គ្រាប់!'
-          : '⚡ REK! +${move.rekCaptures.length} captured!';
+          ? '⚡ រែក (Rek)! ($moveNotation) +${move.rekCaptures.length} គ្រាប់!'
+          : '⚡ REK! ($moveNotation) +${move.rekCaptures.length} captured!';
       HapticFeedback.heavyImpact();
       AudioService.instance.playCapture();
     } else {
+      notif = isKhmer
+          ? '$moverName ដើរ៖ $moveNotation'
+          : '$moverName moved: $moveNotation';
       AudioService.instance.playMove();
     }
 
@@ -1084,8 +1105,8 @@ class _RekGameScreenState extends State<RekGameScreen> {
       final aiTrapAvailable = RekRules.getCapturingMoves(_board, nextTurn).isNotEmpty;
       if (aiTrapAvailable) {
         haoNotice = isKhmer
-            ? '⚡ AI ហៅ (Call)! អ្នកត្រូវតែស៊ីរែក!'
-            : '⚡ AI CALLED! You are forced to capture with Rek!';
+            ? '⚡ AI ហៅ (Call) [$moveNotation]! អ្នកត្រូវតែស៊ីរែក!'
+            : '⚡ AI CALLED [$moveNotation]! You must capture!';
         nextCallTarget = nextTurn;
       }
     }
@@ -1437,6 +1458,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
             onCall: () => _handleCall(caller: PlayerColor.teal),
             showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
             isCallActive: _forcedCallTarget != null,
+            lastMove: _currentTurn == PlayerColor.lime && _lastMoveFromTo.length >= 2
+                ? '${_lastMoveFromTo[0].notation} → ${_lastMoveFromTo[1].notation}'
+                : null,
           )
         else
           PieceSelectorBar(
@@ -1502,6 +1526,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
               onCall: () => _handleCall(caller: PlayerColor.lime),
               showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
               isCallActive: _forcedCallTarget != null,
+              lastMove: _currentTurn == PlayerColor.teal && _lastMoveFromTo.length >= 2
+                  ? '${_lastMoveFromTo[0].notation} → ${_lastMoveFromTo[1].notation}'
+                  : null,
             ),
           )
         else
@@ -1648,6 +1675,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                               onCall: () => _handleCall(caller: PlayerColor.teal),
                               showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
                               isCallActive: _forcedCallTarget != null,
+                              lastMove: _currentTurn == PlayerColor.lime && _lastMoveFromTo.length >= 2
+                                  ? '${_lastMoveFromTo[0].notation} → ${_lastMoveFromTo[1].notation}'
+                                  : null,
                             ),
                             const SizedBox(height: 10),
                             ListenableBuilder(
@@ -1665,6 +1695,9 @@ class _RekGameScreenState extends State<RekGameScreen> {
                                 onCall: () => _handleCall(caller: PlayerColor.lime),
                                 showCallButton: _ruleMode == RekRuleMode.hao && _isPlaying,
                                 isCallActive: _forcedCallTarget != null,
+                                lastMove: _currentTurn == PlayerColor.teal && _lastMoveFromTo.length >= 2
+                                    ? '${_lastMoveFromTo[0].notation} → ${_lastMoveFromTo[1].notation}'
+                                    : null,
                               ),
                             ),
                           ],

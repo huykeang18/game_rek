@@ -32,7 +32,10 @@ class PlayerTimerCard extends StatelessWidget {
     this.onCall,
     this.showCallButton = false,
     this.isCallActive = false,
+    this.lastMove,
   });
+
+  final String? lastMove;
 
   String get formattedTime {
     final minutes = timeSeconds ~/ 60;
@@ -104,6 +107,29 @@ class PlayerTimerCard extends StatelessWidget {
               '$piecesCount ${lang.piecesWord}',
               style: const TextStyle(color: Colors.white54, fontSize: 10),
             ),
+            if (lastMove != null && lastMove!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4), width: 0.8),
+                    ),
+                    child: Text(
+                      '↳ $lastMove',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD54F),
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             if (showCallButton && onCall != null) ...[
               const SizedBox(height: 5),
               _buildCallButton(lang),
@@ -258,22 +284,45 @@ class PlayerTimerCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: primaryColor.withValues(alpha: 0.8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: primaryColor.withValues(alpha: 0.8),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$piecesCount ${lang.piecesWord}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 11),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        '$piecesCount ${lang.piecesWord}',
+                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                      if (lastMove != null && lastMove!.isNotEmpty) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4), width: 0.8),
+                          ),
+                          child: Text(
+                            '↳ $lastMove',
+                            style: const TextStyle(
+                              color: Color(0xFFFFD54F),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),

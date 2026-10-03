@@ -134,7 +134,7 @@ class RulesDialog extends StatelessWidget {
             _buildBodyText(
               '• កូនអុកនីមួយៗអាចរត់ជាខ្សែបន្ទាត់ត្រង់ (ទៅមុខ ថយក្រោយ ទៅឆ្វេង ឬទៅស្តាំ ដូចទូកក្នុងអុក) បានច្រើនក្រឡារហូតដល់ទល់នឹងឧបសគ្គ (កូនអុកផ្សេងទៀត ឬជាយនៃក្តារ)។\n'
               '• កូនអុកមិនអាចដើរបញ្ឆិត (អង្កត់ទ្រូង) ឬលោតរំលងកូនអុកដទៃបានឡើយ។\n'
-              '• ការលេងរួមមានកូនអុកធម្មតា និងកូនអុកពិសេសមួយហៅថា «មេ» (Me - King/Commander) ដែលជាគោលដៅចម្បងនៅលើក្តារ។',
+              '• កូនអុកពិសេស «មេ» (Me - King/Commander) ស្ថិតនៅមួយកន្លែងមិនអាចដើរបានឡើយ (Fixed King)។ អ្នកលេងត្រូវការពារមេរបស់ខ្លួន និងស្វែងរកឱកាសចាប់ស៊ីមេរបស់គូប្រកួត។',
             ),
             const SizedBox(height: 14),
 
@@ -188,9 +188,9 @@ class RulesDialog extends StatelessWidget {
 
           _buildSectionTitle('4. General Movement Rules'),
           _buildBodyText(
-            '• Each piece can move in straight orthogonal lines: forward, backward, left, or right (like a Rook in chess) across any number of empty squares until obstructed by another piece or the board edge.\n'
+            '• Standard pieces can move in straight orthogonal lines: forward, backward, left, or right (like a Rook in chess) across any number of empty squares until obstructed by another piece or the board edge.\n'
             '• Pieces cannot move diagonally and cannot jump over other pieces.\n'
-            '• Gameplay generally involves standard pieces and one piece called the "Me" (King/Commander), which is the primary target on the board.',
+            '• The King ("Me" / Commander) is fixed in one place and cannot move. Players must guard their own King while maneuvering their pieces to capture the opponent\'s stationary King.',
           ),
           const SizedBox(height: 14),
 

@@ -57,6 +57,11 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
     setState(() {
       if (_selectedSquare == null) {
         if (piece != null && piece.player == _currentTurn) {
+          if (piece.isCrowned) {
+            AudioService.instance.playInvalid();
+            HapticFeedback.heavyImpact();
+            return;
+          }
           final isHao = RekRules.isHaoActive(_board, _currentTurn, ruleMode: _ruleMode);
           final validMoves = RekRules.getValidMovesForPiece(_board, pos, ruleMode: _ruleMode);
           if (isHao && validMoves.isEmpty) {
@@ -74,6 +79,11 @@ class _InteractiveBoardDialogState extends State<InteractiveBoardDialog> {
           _selectedSquare = null;
           _legalMoves = [];
         } else if (piece != null && piece.player == _board[_selectedSquare!.row][_selectedSquare!.col]?.player) {
+          if (piece.isCrowned) {
+            AudioService.instance.playInvalid();
+            HapticFeedback.heavyImpact();
+            return;
+          }
           // Switch selection to another piece of the same player
           final isHao = RekRules.isHaoActive(_board, _currentTurn, ruleMode: _ruleMode);
           final validMoves = RekRules.getValidMovesForPiece(_board, pos, ruleMode: _ruleMode);

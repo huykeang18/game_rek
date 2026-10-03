@@ -100,6 +100,9 @@ class RekRules {
     final piece = board[pos.row][pos.col];
     if (piece == null) return [];
 
+    // The King ("Me") is fixed in one place and cannot move
+    if (piece.isCrowned) return [];
+
     final moves = <BoardPosition>[];
     const directions = [
       [-1, 0], // Up / Forward

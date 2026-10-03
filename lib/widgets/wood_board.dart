@@ -84,7 +84,11 @@ class WoodBoard extends StatelessWidget {
 
     final isSelected = selectedSquare == pos;
     final isLegalMove = legalMoves.contains(pos);
-    final isLastMove = lastMoveFromTo.contains(pos);
+    final fromPos = lastMoveFromTo.isNotEmpty ? lastMoveFromTo[0] : null;
+    final toPos = lastMoveFromTo.length > 1 ? lastMoveFromTo[1] : null;
+    final isFromSquare = fromPos == pos;
+    final isToSquare = toPos == pos;
+    final isLastMove = isFromSquare || isToSquare || lastMoveFromTo.contains(pos);
     final isCaptured = recentCaptures.contains(pos);
 
     // Subtle alternating checkered tint on light wood
@@ -114,15 +118,71 @@ class WoodBoard extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // 1. Last move highlight across whole box
-                if (isLastMove)
+                // 1. Move Origin square shadow color highlight
+                if (isFromSquare)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0x40FFD54F),
+                        border: Border.all(
+                          color: const Color(0x99FFD54F),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 2. Move Destination square shadow color highlight
+                if (isToSquare)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0x55FFD54F),
+                        border: Border.all(
+                          color: const Color(0xCCFFD54F),
+                          width: 2.0,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 3. Fallback for any other last move indicator
+                if (isLastMove && !isFromSquare && !isToSquare)
                   Positioned.fill(
                     child: Container(
                       color: const Color(0x33FFF59D),
                     ),
                   ),
 
-                // 2. Selected square highlight across whole box
+                // 4. Subtle board coordinates (ranks 1..8 and files a..h)
+                if (col == 0 && !isFromSquare && !isToSquare && !isSelected)
+                  Positioned(
+                    top: 2,
+                    left: 3,
+                    child: Text(
+                      '${8 - row}',
+                      style: TextStyle(
+                        color: const Color(0xFF5D4037).withValues(alpha: 0.55),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                if (row == 7 && !isFromSquare && !isToSquare && !isSelected)
+                  Positioned(
+                    bottom: 1,
+                    right: 3,
+                    child: Text(
+                      String.fromCharCode('a'.codeUnitAt(0) + col),
+                      style: TextStyle(
+                        color: const Color(0xFF5D4037).withValues(alpha: 0.55),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                // 5. Selected square highlight across whole box
                 if (isSelected)
                   Positioned.fill(
                     child: Container(
@@ -136,7 +196,7 @@ class WoodBoard extends StatelessWidget {
                     ),
                   ),
 
-                // 3. Legal move highlight across WHOLE BOX
+                // 6. Legal move highlight across WHOLE BOX
                 if (isLegalMove)
                   Positioned.fill(
                     child: Container(
@@ -184,6 +244,20 @@ class WoodBoard extends StatelessWidget {
                   Positioned.fill(
                     child: Container(
                       color: const Color(0x66FF1744),
+                    ),
+                  ),
+
+                // 5b. Stationary King throne highlight across whole box
+                if (piece != null && piece.isCrowned)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
+                          width: 1.5,
+                        ),
+                        color: const Color(0xFFFFD54F).withValues(alpha: 0.06),
+                      ),
                     ),
                   ),
 
@@ -283,3 +357,4 @@ class WoodTexturePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+

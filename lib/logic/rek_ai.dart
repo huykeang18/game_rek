@@ -130,10 +130,7 @@ class RekAi {
     if (move.capturedKing) score += 5000;
     score += move.totalCaptures * 200;
 
-    // Moving King into center is risky in Rek
-    if (move.piece.isCrowned) {
-      score -= 20;
-    }
+    // The King is stationary and cannot move. If any move captures enemy pieces, score it.
 
     // Prefer advancing forward
     final forwardDist = aiPlayer == PlayerColor.teal
